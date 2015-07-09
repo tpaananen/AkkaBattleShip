@@ -19,11 +19,11 @@ namespace Messages.CSharp.Pieces
 
         public int CompareTo(Point other)
         {
-            if (other.X < X)
+            if (other.Y < Y)
             {
                 return 1;
             }
-            return Y.CompareTo(other.Y);
+            return X.CompareTo(other.X);
         }
 
         public bool Equals(Point other)

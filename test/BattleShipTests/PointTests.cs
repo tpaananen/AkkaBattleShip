@@ -23,10 +23,31 @@ namespace BattleShipTests
         {
             var point1 = new Point(0, 1);
             var point2 = new Point(1, 1);
-            var list = new List<Point> { point1, point2 };
+            var point3 = new Point(3, 1);
+            var list = new List<Point> { point3, point1, point2 };
             list.Sort();
             Assert.AreEqual(point1, list[0]);
             Assert.AreEqual(point2, list[1]);
+            Assert.AreEqual(point3, list[2]);
+        }
+
+        [Test]
+        public void TestPointOrderingXAndYaxis()
+        {
+            var point1 = new Point(0, 1);
+            var point2 = new Point(1, 1);
+            var point3 = new Point(3, 1);
+
+            var point4 = new Point(2, 2);
+            var point5 = new Point(5, 2);
+
+            var list = new List<Point> { point3, point1, point4, point5, point2 };
+            list.Sort();
+            Assert.AreEqual(point1, list[0]);
+            Assert.AreEqual(point2, list[1]);
+            Assert.AreEqual(point3, list[2]);
+            Assert.AreEqual(point4, list[3]);
+            Assert.AreEqual(point5, list[4]);
         }
 
         [Test]

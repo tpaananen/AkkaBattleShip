@@ -60,14 +60,15 @@ namespace BattleShipConsole
 
             Receive<MessageTable>(message =>
             {
-                Tell("Laivasto:");
+                Tell("Battleships:");
                 Console.Write("  ");
                 for (int i = 65; i < 75; ++i)
                 {
                     Console.Write((char)i);
                 }
                 Tell("");
-                var points = message.Points.OrderBy(x => x.Y).ThenBy(x => x.X).ToArray();
+
+                var points = message.Points;
                 for (int i = 0; i < 10; ++i)
                 {
                     Console.Write((i + 1).ToString().PadLeft(2, ' '));
