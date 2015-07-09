@@ -46,16 +46,20 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Messages\Messages.CSharp.csproj">
-      <Project>{2BBC2467-2E0C-47B5-8FD3-D0578CCAAF8E}</Project>
-      <Name>Messages.CSharp</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Actors\Actors.CSharp.csproj">
+      <Project>{ee65da6c-8ebc-44ce-9eff-d0e193839e7a}</Project>
+      <Name>Actors.CSharp</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\Messages\Messages.CSharp.csproj">
+      <Project>{2bbc2467-2e0c-47b5-8fd3-d0578ccaaf8e}</Project>
+      <Name>Messages.CSharp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
