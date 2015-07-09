@@ -41,9 +41,10 @@ namespace Messages.CSharp
         PlayerJoined = 2,
         GameStartedYouStart = 3,
         GameStartedOpponentStarts = 4,
-        YouWon = 5,
-        YouLost = 6,
-        GameOver = 7
+        ItIsYourTurn = 5,
+        YouWon = 6,
+        YouLost = 7,
+        GameOver = 8
     }
 
     public class MessageGameStatusUpdate : GameMessageWithToken
@@ -52,10 +53,13 @@ namespace Messages.CSharp
 
         public GameStatus Status { get; private set; }
 
-        public MessageGameStatusUpdate(Guid token, Guid gameToken, GameStatus status, IActorRef game) : base(token, gameToken)
+        public string Message { get; private set; }
+
+        public MessageGameStatusUpdate(Guid token, Guid gameToken, GameStatus status, IActorRef game, string message = null) : base(token, gameToken)
         {
             Status = status;
             Game = game;
+            Message = message;
         }
     }
 
@@ -129,5 +133,16 @@ namespace Messages.CSharp
         {
             Point = point;
         }
+    }
+
+    public class MessageMissileWasAHit : MessageWithPoint
+    {
+        public bool ShipDestroyed { get; private set; }
+
+        public MessageMissileWasAHit(Guid token, Guid gameToken, Point point, bool shipDestroyed = false) : base(token, gameToken, point)
+        {
+            ShipDestroyed = shipDestroyed;
+        }
+
     }
 }

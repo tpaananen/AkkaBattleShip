@@ -4,10 +4,10 @@ namespace Messages.CSharp.Pieces
 {
     public sealed class Point : IEquatable<Point>, IComparable<Point>
     {
-        public readonly byte X;
-        public readonly byte Y;
-        public readonly bool HasShip;
-        public readonly bool HasHit;
+        public byte X { get; private set; }
+        public byte Y { get; private set; }
+        public bool HasShip { get; private set; }
+        public bool HasHit { get; private set; }
 
         public Point(byte x, byte y, bool hasShip = false, bool hasHit = false)
         {

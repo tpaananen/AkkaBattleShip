@@ -1,4 +1,5 @@
-﻿using Akka.Actor;
+﻿using System;
+using Akka.Actor;
 using Messages.CSharp;
 using Messages.CSharp.Pieces;
 
@@ -10,9 +11,12 @@ namespace Actors.CSharp
 
         private IActorRef _ship;
 
-        public PointActor(Point point)
+        private readonly Guid _gameToken;
+
+        public PointActor(Point point, Guid gameToken)
         {
             _point = point;
+            _gameToken = gameToken;
 
             Receive<MessageYouArePartOfShip>(message =>
             {
@@ -24,11 +28,11 @@ namespace Actors.CSharp
                 PointHasHit();
                 if (_ship != null)
                 {
-                    _ship.Tell(new MessagePartOfTheShipDestroyed(_point), Self);
+                    _ship.Tell(new MessagePartOfTheShipDestroyed(Guid.Empty, _gameToken, _point), Self);
                 }
                 else
                 {
-                    Context.Parent.Tell(new MessageMissileDidNotHitShip(message.Point), Self);
+                    Context.Parent.Tell(new MessageMissileDidNotHitShip(Guid.Empty, _gameToken, message.Point), Self);
                 }
                 Become(Destroyed);
             });
@@ -38,7 +42,7 @@ namespace Actors.CSharp
         {
             Receive<MessageMissile>(message =>
             {
-                Context.Parent.Tell(new MessageAlreadyHit(_point), Self);
+                Context.Parent.Tell(new MessageAlreadyHit(Guid.Empty, _gameToken, _point), Self);
             });
         }
 

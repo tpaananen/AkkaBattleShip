@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Akka.Actor;
 using Messages.CSharp;
 using Messages.CSharp.Pieces;
@@ -131,13 +130,26 @@ namespace Actors.CSharp
 
         private void GameStarted()
         {
-            Receive<MessageTable>(message => message.Token == _token && message.GameToken == _currentGameToken, message =>
+            Receive<MessageTable>(IsForMe, message =>
             {
                 _playerUserInterface.Tell(message, Self);
+            });
+
+            Receive<MessageGameStatusUpdate>(message => IsForMe(message) && message.Status == GameStatus.ItIsYourTurn, message =>
+            {
+                if (!string.IsNullOrEmpty(message.Message))
+                {
+                    _playerUserInterface.Tell(message.Message);
+                }
                 _playerUserInterface.Tell("coord", Self);
             });
 
-            Receive<MessageAlreadyHit>(message =>
+            Receive<MessageGameStatusUpdate>(message => IsForMe(message) && message.Status == GameStatus.None && !string.IsNullOrEmpty(message.Message), message =>
+            {
+                _playerUserInterface.Tell(message.Message, Self);
+            });
+
+            Receive<MessageAlreadyHit>(IsForMe, message =>
             {
                 _playerUserInterface.Tell("The point was already used, sorry!", Self);
             });
@@ -149,6 +161,14 @@ namespace Actors.CSharp
 
             Receive<MessageGameStatusUpdate>(message => message.Token == _token && message.Status == GameStatus.YouWon || message.Status == GameStatus.YouLost, message =>
             {
+                if (message.Status == GameStatus.YouWon)
+                {
+                    _playerUserInterface.Tell("You won!", Self);
+                }
+                else
+                {
+                    _playerUserInterface.Tell("You lost!", Self);
+                }
                 // Do something
                 _currentGameToken = Guid.Empty;
                 _currentGame = null;
@@ -159,6 +179,11 @@ namespace Actors.CSharp
             {
                 Log.Debug("Unhandled message of type " + message.GetType() + " received in GameStarted state...");
             });
+        }
+
+        private bool IsForMe(GameMessageWithToken message)
+        {
+            return message.Token == _token && message.GameToken == _currentGameToken;
         }
 
         protected override SupervisorStrategy SupervisorStrategy()

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Messages.CSharp;
@@ -10,10 +11,12 @@ namespace Actors.CSharp
     {
         private readonly HashSet<IActorRef> _shipActors = new HashSet<IActorRef>();
         private readonly Dictionary<Point, IActorRef> _pointActors = new Dictionary<Point, IActorRef>(); 
-        private readonly List<Point> _currentPoints = new List<Point>(); 
+        private readonly List<Point> _currentPoints = new List<Point>();
+        private readonly Guid _gameToken;
 
-        public GameTableActor(IReadOnlyList<Ship> ships)
+        public GameTableActor(Guid gameToken, IReadOnlyList<Ship> ships)
         {
+            _gameToken = gameToken;
             IntializeTable(ships);
             Become(GameOn);
         }
@@ -25,13 +28,27 @@ namespace Actors.CSharp
                 _pointActors[message.Point].Tell(message, Self);
             });
 
-            Receive<MessageShipDestroyed>(message => _shipActors.Contains(Sender), message =>
+            Receive<MessagePartOfTheShipDestroyed>(message =>
+            {
+                Context.Parent.Tell(new MessageMissileWasAHit(Guid.Empty, _gameToken, message.Point), Self);
+            });
+
+            Receive<MessageShipDestroyed>(message =>
             {
                 _shipActors.Remove(Sender);
                 if (_shipActors.Count == 0)
                 {
                     Become(GameOver);
                 }
+                else
+                {
+                    Context.Parent.Tell(new MessageMissileWasAHit(Guid.Empty, _gameToken, message.Point, true));
+                }
+            });
+
+            Receive<MessageMissileDidNotHitShip>(message =>
+            {
+                Context.Parent.Tell(message, Self);
             });
 
             Receive<MessageAlreadyHit>(message =>
@@ -48,7 +65,7 @@ namespace Actors.CSharp
 
         private void GameOver()
         {
-            Context.Parent.Tell(new MessageGameOver(), Self);
+            Context.Parent.Tell(new MessageGameOver(Guid.Empty, _gameToken), Self);
 
             ReceiveAny(message =>
             {
@@ -79,13 +96,13 @@ namespace Actors.CSharp
                 {
                     var point = new Point(x, y, pointsWithShip.Any(d => d.X == x && d.Y == y));
                     _currentPoints.Add(point);
-                    _pointActors.Add(point, Context.ActorOf(Props.Create(() => new PointActor(point)), point.ToString()));
+                    _pointActors.Add(point, Context.ActorOf(Props.Create(() => new PointActor(point, _gameToken)), point.ToString()));
                 }
             }
 
             foreach (var ship in ships)
             {
-                var shipActor = Context.ActorOf(Props.Create(() => new ShipActor(ship)));
+                var shipActor = Context.ActorOf(Props.Create(() => new ShipActor(ship, _gameToken)));
                 foreach (var point in ship.Points)
                 {
                     _pointActors[point].Tell(new MessageYouArePartOfShip(shipActor));

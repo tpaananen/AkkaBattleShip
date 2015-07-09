@@ -25,7 +25,7 @@ namespace Actors.CSharp
         {
             _gameToken = gameToken;
 
-            Receive<MessagePlayerJoining>(message => message.GameToken == _gameToken, message =>
+            Receive<MessagePlayerJoining>(IsForMe, message =>
             {
                 Log.Debug("Player 1 arrived");
                 _player1 = message.Player;
@@ -42,7 +42,7 @@ namespace Actors.CSharp
 
         private void WaitingForSecondPlayer()
         {
-            Receive<MessagePlayerJoining>(message => message.GameToken == _gameToken && message.Player != _player1, message =>
+            Receive<MessagePlayerJoining>(message => IsForMe(message) && message.Player != _player1, message =>
             {
                 Log.Debug("Player 2 arrived");
                 _player2 = message.Player;
@@ -63,11 +63,11 @@ namespace Actors.CSharp
 
         private void WaitingForPositions()
         {
-            Receive<MessagePlayerPositions>(message => message.GameToken == _gameToken && message.Token == _player1.Token && !_player1Initialized, message =>
+            Receive<MessagePlayerPositions>(message => IsForMe(message) && message.Token == _player1.Token && !_player1Initialized, message =>
             {
                 Log.Debug("Player 1 ships have arrived");
                 _player1Initialized = true;
-                _player1Table = Context.ActorOf(Props.Create(() => new GameTableActor(message.Ships)), "P1:" + _player1.Name);
+                _player1Table = Context.ActorOf(Props.Create(() => new GameTableActor(_gameToken, message.Ships)), "P1:" + _player1.Name);
 
                 if (_player2Initialized)
                 {
@@ -77,11 +77,11 @@ namespace Actors.CSharp
                 }
             });
 
-            Receive<MessagePlayerPositions>(message => message.GameToken == _gameToken && message.Token == _player2.Token && !_player2Initialized, message =>
+            Receive<MessagePlayerPositions>(message => IsForMe(message) && message.Token == _player2.Token && !_player2Initialized, message =>
             {
                 Log.Debug("Player 2 ships have arrived");
                 _player2Initialized = true;
-                _player2Table = Context.ActorOf(Props.Create(() => new GameTableActor(message.Ships)), "P2:" + _player2.Name);
+                _player2Table = Context.ActorOf(Props.Create(() => new GameTableActor(_gameToken, message.Ships)), "P2:" + _player2.Name);
 
                 if (_player1Initialized)
                 {
@@ -97,11 +97,13 @@ namespace Actors.CSharp
             });
         }
 
+        // TODO: get rid of duplicate code
+
         private void PlayerOne()
         {
             #region Player message
 
-            Receive<MessageMissile>(message => message.Token == _player1.Token && message.GameToken == _gameToken, message =>
+            Receive<MessageMissile>(IsForMe, message =>
             {
                 _player2Table.Tell(message, Self);
             });
@@ -113,19 +115,34 @@ namespace Actors.CSharp
             Receive<Point[]>(message =>
             {
                 _player2.Actor.Tell(new MessageTable(_player2.Token, _gameToken, message), Self);
+            });
+
+            Receive<MessageMissileWasAHit>(IsForMe, message =>
+            {
+                string postfix = message.ShipDestroyed ? " The ship was destroyed!" : "";
+                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Missile was a hit at " + message.Point + "." + postfix), Self);
+                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.None, Self, "Opponents missile was a hit at " + message.Point + "." + postfix), Self);
+            });
+
+            Receive<MessageMissileDidNotHitShip>(IsForMe, message =>
+            {
+                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponents missile did not hit at " + message.Point), Self);
+                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.None, Self, "Your missile did not hit at " + message.Point), Self);
                 Become(PlayerTwo);
             });
 
-            Receive<MessageGameOver>(message =>
+            Receive<MessageGameOver>(IsForMe, message =>
             {
-                _player2.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.YouLost, Self), Self);
+                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.YouLost, Self), Self);
                 _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.YouWon, Self), Self);
                 Become(GameOver);
             });
 
-            Receive<MessageAlreadyHit>(message =>
+            Receive<MessageAlreadyHit>(IsForMe, message =>
             {
+                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponent used the same point again at " + message.Point));
                 _player1.Actor.Tell(new MessageMissileAlreadyHit(_player1.Token, _gameToken, message.Point), Self);
+                Become(PlayerTwo);
             });
 
             #endregion
@@ -140,7 +157,7 @@ namespace Actors.CSharp
         {
             #region Player message
 
-            Receive<MessageMissile>(message => message.Token == _player2.Token && message.GameToken == _gameToken, message =>
+            Receive<MessageMissile>(IsForMe, message =>
             {
                 _player1Table.Tell(message, Self);
             });
@@ -152,19 +169,34 @@ namespace Actors.CSharp
             Receive<Point[]>(message =>
             {
                 _player1.Actor.Tell(new MessageTable(_player1.Token, _gameToken, message), Self);
+            });
+
+            Receive<MessageMissileWasAHit>(IsForMe, message =>
+            {
+                string postfix = message.ShipDestroyed ? " The ship was destroyed!" : "";
+                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Missile was a hit at " + message.Point + "." + postfix), Self);
+                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.None, Self, "Opponents missile was a hit at " + message.Point + "." + postfix), Self);
+            });
+
+            Receive<MessageMissileDidNotHitShip>(IsForMe, message =>
+            {
+                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponents missile did not hit at " + message.Point), Self);
+                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.None, Self, "Your missile did not hit at " + message.Point), Self);
                 Become(PlayerOne);
             });
 
-            Receive<MessageGameOver>(message =>
+            Receive<MessageGameOver>(IsForMe, message =>
             {
-                _player2.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.YouWon, Self), Self);
                 _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.YouLost, Self), Self);
+                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.YouWon, Self), Self);
                 Become(GameOver);
             });
 
-            Receive<MessageAlreadyHit>(message =>
+            Receive<MessageAlreadyHit>(IsForMe, message =>
             {
+                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponent used the same point again at " + message.Point));
                 _player2.Actor.Tell(new MessageMissileAlreadyHit(_player2.Token, _gameToken, message.Point), Self);
+                Become(PlayerOne);
             });
 
             #endregion
@@ -186,5 +218,9 @@ namespace Actors.CSharp
             });
         }
 
+        private bool IsForMe(GameMessageWithToken message)
+        {
+            return message.GameToken == _gameToken;
+        }
     }
 }

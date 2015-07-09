@@ -12,47 +12,50 @@ namespace Messages.CSharp
         {
             ShipActorRef = actorRef;
         }
-
-
     }
 
-    public abstract class MessageWithPoint
+    public abstract class MessageWithPoint : GameMessageWithToken
     {
         public Point Point { get; private set; }
 
-        protected MessageWithPoint(Point point)
+        protected MessageWithPoint(Guid token, Guid gameToken, Point point)
+            : base(token, gameToken)
         {
             Point = point;
         }
     }
 
-    public class MessageShipDestroyed
+    public class MessageShipDestroyed : MessageWithPoint
     {
+        public MessageShipDestroyed(Guid token, Guid gameToken, Point point) : base(token, gameToken, point) { }
     }
 
     public class MessageMissileDidNotHitShip : MessageWithPoint
     {
-        public MessageMissileDidNotHitShip(Point point) : base(point)
+        public MessageMissileDidNotHitShip(Guid token, Guid gameToken, Point point) : base(token, gameToken, point)
         {
         }
     }
 
     public class MessageAlreadyHit : MessageWithPoint
     {
-        public MessageAlreadyHit(Point point) : base(point)
+        public MessageAlreadyHit(Guid token, Guid gameToken, Point point) : base(token, gameToken, point)
         {
         }
     }
 
     public class MessagePartOfTheShipDestroyed : MessageWithPoint
     {
-        public MessagePartOfTheShipDestroyed(Point point) : base(point)
+        public MessagePartOfTheShipDestroyed(Guid token, Guid gameToken, Point point) : base(token, gameToken, point)
         {
         }
     }
 
-    public class MessageGameOver
+    public class MessageGameOver : GameMessageWithToken
     {
+        public MessageGameOver(Guid token, Guid gameToken) : base(token, gameToken)
+        {
+        }
     }
 
     public class MessagePlayersFree
