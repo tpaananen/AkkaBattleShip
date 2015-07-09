@@ -8,21 +8,7 @@ namespace BattleShipServer
         static void Main(string[] args)
         {
             // Server
-
-            var config = ConfigurationFactory.ParseString(@"
-            akka {
-                actor {
-                    provider = ""Akka.Remote.RemoteActorRefProvider, Akka.Remote""
-                }
-
-                remote {
-                    helios.tcp {
-                        port = 8080
-                        hostname = localhost
-                    }
-                }
-            }");
-
+            var config = ConfigurationFactory.Load();
             ActorSystemContext.CreateActorSystemContext(config);
             using (var system = ActorSystemContext.System)
             {

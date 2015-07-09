@@ -11,22 +11,7 @@ namespace BattleShipConsole
         static void Main(string[] args)
         {
             // Client
-
-            var port = new Random().Next(30000, 65000);
-
-            var config = ConfigurationFactory.ParseString(@"
-            akka {
-                actor {
-                    provider = ""Akka.Remote.RemoteActorRefProvider, Akka.Remote""
-                }
-                remote {
-                    helios.tcp {
-                        port = " + port + @"
-                        hostname = localhost
-                    }
-                }
-            }");
-
+            var config = ConfigurationFactory.Load();
             ActorSystemContext.CreateActorSystemContext(config);
             using (var system = ActorSystemContext.System)
             {
