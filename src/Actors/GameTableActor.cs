@@ -9,13 +9,14 @@ namespace Actors.CSharp
 {
     public class GameTableActor : BattleShipActor
     {
-        private readonly HashSet<IActorRef> _shipActors = new HashSet<IActorRef>();
+        private readonly List<Ship> _ships; 
         private readonly Dictionary<Point, IActorRef> _pointActors = new Dictionary<Point, IActorRef>(); 
         private readonly List<Point> _currentPoints = new List<Point>();
         private readonly Guid _gameToken;
 
         public GameTableActor(Guid gameToken, IReadOnlyList<Ship> ships)
         {
+            _ships = new List<Ship>(ships);
             _gameToken = gameToken;
             IntializeTable(ships);
             Become(GameOn);
@@ -25,7 +26,14 @@ namespace Actors.CSharp
         {
             Receive<MessageMissile>(message =>
             {
-                _pointActors[message.Point].Tell(message, Self);
+                IActorRef pointActor;
+                if (!_pointActors.TryGetValue(message.Point, out pointActor))
+                {
+                    Log.Error("Invalid point " + message.Point + " received.");
+                    // TODO: return something so that game will go on
+                    return;
+                }
+                pointActor.Tell(message, Self);
             });
 
             Receive<MessagePartOfTheShipDestroyed>(message =>
@@ -35,8 +43,8 @@ namespace Actors.CSharp
 
             Receive<MessageShipDestroyed>(message =>
             {
-                _shipActors.Remove(Sender);
-                if (_shipActors.Count == 0)
+                _ships.RemoveAll(ship => ship.Points.Any(point => point == message.Point));
+                if (_ships.Count == 0)
                 {
                     Become(GameOver);
                 }
@@ -90,25 +98,28 @@ namespace Actors.CSharp
         {
             var pointsWithShip = ships.SelectMany(x => x.Points).ToList();
 
-            for (byte y = 1; y <= 10; ++y)
-            {
-                for (byte x = 1; x <= 10; ++x)
-                {
-                    var point = new Point(x, y, pointsWithShip.Any(d => d.X == x && d.Y == y));
-                    _currentPoints.Add(point);
-                    _pointActors.Add(point, Context.ActorOf(Props.Create(() => new PointActor(point, _gameToken)), point.ToString()));
-                }
-            }
-
             foreach (var ship in ships)
             {
                 var shipActor = Context.ActorOf(Props.Create(() => new ShipActor(ship, _gameToken)));
                 foreach (var point in ship.Points)
                 {
-                    _pointActors[point].Tell(new MessageYouArePartOfShip(shipActor));
+                    _pointActors[point] = shipActor;
                 }
-                _shipActors.Add(shipActor);
             }
+
+            for (byte y = 1; y <= 10; ++y)
+            {
+                for (byte x = 1; x <= 10; ++x)
+                {
+                    var point = new Point(x, y);
+                    if (!_pointActors.ContainsKey(point))
+                    {
+                        _pointActors.Add(point, Context.ActorOf(Props.Create(() => new PointActor(point, _gameToken)), point.ToString()));
+                    }
+                }
+            }
+
+            
         }
     }
 }

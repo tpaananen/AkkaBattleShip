@@ -4,15 +4,6 @@ using Messages.CSharp.Pieces;
 
 namespace Messages.CSharp
 {
-    public class MessageYouArePartOfShip
-    {
-        public IActorRef ShipActorRef { get; private set; }
-
-        public MessageYouArePartOfShip(IActorRef actorRef)
-        {
-            ShipActorRef = actorRef;
-        }
-    }
 
     public abstract class MessageWithPoint : GameMessageWithToken
     {

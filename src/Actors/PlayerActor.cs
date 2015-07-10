@@ -49,6 +49,11 @@ namespace Actors.CSharp
                     _playerUserInterface.Tell(message.Errors, Self);
                 }
             });
+
+            Receive<MessageUnableToCreateGame>(message =>
+            {
+
+            });
         }
 
         private void InLobby()

@@ -135,6 +135,7 @@ namespace Actors.CSharp
             {
                 _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.YouLost, Self), Self);
                 _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.YouWon, Self), Self);
+                Context.Parent.Tell(new MessagePlayersFree(_gameToken, _player1.Token, _player2.Token), Self);
                 Become(GameOver);
             });
 
@@ -189,6 +190,7 @@ namespace Actors.CSharp
             {
                 _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.YouLost, Self), Self);
                 _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.YouWon, Self), Self);
+                Context.Parent.Tell(new MessagePlayersFree(_gameToken, _player1.Token, _player2.Token), Self);
                 Become(GameOver);
             });
 
@@ -209,9 +211,7 @@ namespace Actors.CSharp
 
         private void GameOver()
         {
-            ActorSystemContext.VirtualManager().Tell(new MessagePlayersFree(_player1.Token, _player2.Token), Self);
-            Context.Parent.Tell(new MessageGameStatusUpdate(Guid.Empty, _gameToken, GameStatus.GameOver, Self), Self);
-            
+            GameLog("Game over for " + _gameToken);
             ReceiveAny(message =>
             {
                 GameLog("Unhandled message of type " + message.GetType() + " received in GameOver state...");

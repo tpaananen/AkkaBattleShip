@@ -14,7 +14,7 @@ namespace Actors.CSharp
 
         public GameManagerActor()
         {
-            _gameFactory = Context.ActorOf(Props.Create<GameFactoryActor>(), Guid.NewGuid().ToString());
+            _gameFactory = Context.ActorOf(Props.Create<GameFactoryActor>(), "gameFactory");
 
             Receive<MessageRegisterPlayer>(HasSender, message =>
             {

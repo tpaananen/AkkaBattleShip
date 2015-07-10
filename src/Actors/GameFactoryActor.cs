@@ -29,9 +29,10 @@ namespace Actors.CSharp
                 Become(WaitingForSecondPlayer);
             });
 
-            Receive<MessageGameStatusUpdate>(message => HasSender(message) && message.Status == GameStatus.GameOver, message =>
+            Receive<MessagePlayersFree>(HasSender, message =>
             {
                 Log.Info("Game factory to destroy the game with token " + message.GameToken);
+                Context.Parent.Tell(message, Self);
                 Sender.Tell(PoisonPill.Instance);
             });
         }
@@ -42,13 +43,13 @@ namespace Actors.CSharp
             {
                 Log.Info("The second player arrived, forwarding to game with token " + _currentGameToken);
                 _gameUnderConstruction.Tell(new MessagePlayerJoining(_currentGameToken, message.Player), Self);
-                Context.Parent.Tell(new MessageGameStatusUpdate(message.Player.Token, _currentGameToken, GameStatus.Created, _gameUnderConstruction), Self);
                 Become(WaitingForFirstPlayer);
             });
 
-            Receive<MessageGameStatusUpdate>(message => HasSender(message) && message.Status == GameStatus.GameOver, message =>
+            Receive<MessagePlayersFree>(HasSender, message =>
             {
                 Log.Info("Game factory to destroy the game with token " + message.GameToken);
+                Context.Parent.Tell(message, Self);
                 Sender.Tell(PoisonPill.Instance);
             });
         }

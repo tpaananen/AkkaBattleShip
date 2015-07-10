@@ -158,8 +158,6 @@ namespace BattleShipConsole
 
         private bool FillAndPushPoints(Point startPoint, Point endPoint)
         {
-
-
             var list = new List<Point> {startPoint};
             if (startPoint != endPoint)
             {
@@ -174,7 +172,7 @@ namespace BattleShipConsole
                     // vertical
                     for (var y = (byte) (list[0].Y + 1); y < list[1].Y; ++y)
                     {
-                        list.Add(new Point(list[0].X, y));
+                        list.Add(new Point(list[0].X, y, true));
                     }
                 }
                 else
@@ -182,7 +180,7 @@ namespace BattleShipConsole
                     // Horiz
                     for (var x = (byte) (list[0].X + 1); x < list[1].X; ++x)
                     {
-                        list.Add(new Point(x, list[0].Y));
+                        list.Add(new Point(x, list[0].Y, true));
                     }
                 }
 
