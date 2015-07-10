@@ -27,7 +27,7 @@ namespace Actors.CSharp
 
             Receive<MessagePlayerJoining>(IsForMe, message =>
             {
-                Log.Debug("Player 1 arrived");
+                GameLog("Player 1 arrived");
                 _player1 = message.Player;
                 _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.Created, Self));
 
@@ -36,7 +36,7 @@ namespace Actors.CSharp
 
             ReceiveAny(message =>
             {
-                Log.Debug("Unhandled message of type " + message.GetType() + " received in intial state...");
+                GameLog("Unhandled message of type " + message.GetType() + " received in intial state...");
             });
         }
 
@@ -44,7 +44,7 @@ namespace Actors.CSharp
         {
             Receive<MessagePlayerJoining>(message => IsForMe(message) && message.Player != _player1, message =>
             {
-                Log.Debug("Player 2 arrived");
+                GameLog("Player 2 arrived");
                 _player2 = message.Player;
 
                 _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.PlayerJoined, Self));
@@ -57,7 +57,7 @@ namespace Actors.CSharp
 
             ReceiveAny(message =>
             {
-                Log.Debug("Unhandled message of type " + message.GetType() + " received in WaitingForSecondPlayer state...");
+                GameLog("Unhandled message of type " + message.GetType() + " received in WaitingForSecondPlayer state...");
             });
         }
 
@@ -65,7 +65,7 @@ namespace Actors.CSharp
         {
             Receive<MessagePlayerPositions>(message => IsForMe(message) && message.Token == _player1.Token && !_player1Initialized, message =>
             {
-                Log.Debug("Player 1 ships have arrived");
+                GameLog("Player 1 ships have arrived");
                 _player1Initialized = true;
                 _player1Table = Context.ActorOf(Props.Create(() => new GameTableActor(_gameToken, message.Ships)), "P1:" + _player1.Name);
 
@@ -79,7 +79,7 @@ namespace Actors.CSharp
 
             Receive<MessagePlayerPositions>(message => IsForMe(message) && message.Token == _player2.Token && !_player2Initialized, message =>
             {
-                Log.Debug("Player 2 ships have arrived");
+                GameLog("Player 2 ships have arrived");
                 _player2Initialized = true;
                 _player2Table = Context.ActorOf(Props.Create(() => new GameTableActor(_gameToken, message.Ships)), "P2:" + _player2.Name);
 
@@ -93,7 +93,7 @@ namespace Actors.CSharp
 
             ReceiveAny(message =>
             {
-                Log.Debug("Unhandled message of type " + message.GetType() + " received in WaitingForPositions state...");
+                GameLog("Unhandled message of type " + message.GetType() + " received in WaitingForPositions state...");
             });
         }
 
@@ -149,7 +149,7 @@ namespace Actors.CSharp
 
             ReceiveAny(message =>
             {
-                Log.Debug("Unhandled message of type " + message.GetType() + " received in PlayerOne state...");
+                GameLog("Unhandled message of type " + message.GetType() + " received in PlayerOne state...");
             });
         }
 
@@ -203,7 +203,7 @@ namespace Actors.CSharp
 
             ReceiveAny(message =>
             {
-                Log.Debug("Unhandled message of type " + message.GetType() + " received in PlayerTwo state...");
+                GameLog("Unhandled message of type " + message.GetType() + " received in PlayerTwo state...");
             });
         }
 
@@ -214,13 +214,23 @@ namespace Actors.CSharp
             
             ReceiveAny(message =>
             {
-                Log.Debug("Unhandled message of type " + message.GetType() + " received in GameOver state...");
+                GameLog("Unhandled message of type " + message.GetType() + " received in GameOver state...");
             });
         }
 
         private bool IsForMe(GameMessageWithToken message)
         {
-            return message.GameToken == _gameToken;
+            if (message.GameToken == _gameToken)
+            {
+                return true;
+            }
+            GameLog("Message not for me with token " + message.GameToken);
+            return false;
+        }
+
+        private void GameLog(string message)
+        {
+            Log.Info("Game " + _gameToken + ": " + message);
         }
     }
 }

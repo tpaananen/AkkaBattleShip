@@ -18,7 +18,7 @@ namespace Actors.CSharp
 
             Receive<MessageRegisterPlayer>(HasSender, message =>
             {
-                Log.Debug("Register message from " + message.Name);
+                Log.Info("Register message from " + message.Name);
                 if (_players.ContainsKey(Sender))
                 {
                     string error = "Received register player message ('" + message.Name + "'), but the sender is already registered.";
@@ -34,7 +34,7 @@ namespace Actors.CSharp
 
             Receive<MessageUnregisterPlayer>(HasSender, message =>
             {
-                Log.Debug("Unregister message from " + message.Token);
+                Log.Info("Unregister message from " + message.Token);
                 if (!_players.ContainsKey(Sender))
                 {
                     Log.Error("Received message to unregister a player, but the player does not exist with the token");
@@ -45,7 +45,7 @@ namespace Actors.CSharp
 
             Receive<MessageCreateGame>(HasSender, message =>
             {
-                Log.Debug("Create game message from " + message.Token);
+                Log.Info("Create game message from " + message.Token);
 
                 string error;
                 if (!_playerTokens.Add(message.Token))
@@ -69,7 +69,7 @@ namespace Actors.CSharp
 
             Receive<MessagePlayersFree>(HasSender, message =>
             {
-                Log.Debug("Players free message from game " + message.GameToken);
+                Log.Info("Players free message from game " + message.GameToken);
                 foreach (var token in message.Tokens)
                 {
                     _playerTokens.Remove(token);

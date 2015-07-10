@@ -6,11 +6,16 @@ namespace Actors.CSharp
 {
     public abstract class BattleShipActor : ReceiveActor
     {
-        protected readonly ILoggingAdapter Log = Context.GetLogger();
+        private ILoggingAdapter _logger;
 
-        protected Predicate<object> HasSender
+        protected ILoggingAdapter Log
         {
-            get { return message => Sender != null; }
+            get { return _logger ?? (_logger = Context.GetLogger()); }
+        }
+
+        protected bool HasSender(object message)
+        {
+            return Sender != null;
         }
 
     }

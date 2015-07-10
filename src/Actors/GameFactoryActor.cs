@@ -22,13 +22,16 @@ namespace Actors.CSharp
             Receive<MessagePlayerArrived>(message =>
             {
                 _currentGameToken = Guid.NewGuid();
+                Log.Info("The first player arrived, forwarding to game with token " + _currentGameToken);
+
                 _gameUnderConstruction = Context.ActorOf(Props.Create(() => new GameActor(_currentGameToken)), _currentGameToken.ToString());
                 _gameUnderConstruction.Tell(new MessagePlayerJoining(_currentGameToken, message.Player), Self);
                 Become(WaitingForSecondPlayer);
             });
 
-            Receive<MessageGameStatusUpdate>(message => Sender != null && message.Status == GameStatus.GameOver, message =>
+            Receive<MessageGameStatusUpdate>(message => HasSender(message) && message.Status == GameStatus.GameOver, message =>
             {
+                Log.Info("Game factory to destroy the game with token " + message.GameToken);
                 Sender.Tell(PoisonPill.Instance);
             });
         }
@@ -37,13 +40,15 @@ namespace Actors.CSharp
         {
             Receive<MessagePlayerArrived>(message =>
             {
+                Log.Info("The second player arrived, forwarding to game with token " + _currentGameToken);
                 _gameUnderConstruction.Tell(new MessagePlayerJoining(_currentGameToken, message.Player), Self);
                 Context.Parent.Tell(new MessageGameStatusUpdate(message.Player.Token, _currentGameToken, GameStatus.Created, _gameUnderConstruction), Self);
                 Become(WaitingForFirstPlayer);
             });
 
-            Receive<MessageGameStatusUpdate>(message => Sender != null && message.Status == GameStatus.GameOver, message =>
+            Receive<MessageGameStatusUpdate>(message => HasSender(message) && message.Status == GameStatus.GameOver, message =>
             {
+                Log.Info("Game factory to destroy the game with token " + message.GameToken);
                 Sender.Tell(PoisonPill.Instance);
             });
         }
