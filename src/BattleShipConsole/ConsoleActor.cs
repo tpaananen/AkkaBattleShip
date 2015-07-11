@@ -23,6 +23,7 @@ namespace BattleShipConsole
             Receive<MessageGiveMeYourPositions>(message =>
             {
                 Tell("Coordinates format: A1:A5 -> a length of 4 ship vertically positioned");
+                _stack = new Stack<Tuple<string, int>>(message.Ships);
                 Become(GettingPoints);
             });
 
@@ -106,12 +107,12 @@ namespace BattleShipConsole
         {
             Receive<string>(message => message == "get" && _stack.Count != 0, message =>
             {
-                var item = _stack.Peek();
+                var item = _stack.Pop();
                 Tell("Give coordinates for " + item.Item1 + " (len: " + item.Item2 + ": ");
                 var coords = Read();
-                if (PushCoords(coords, item.Item2))
+                if (!PushCoords(coords, item.Item2))
                 {
-                    _stack.Pop();
+                    _stack.Push(item);
                 }
                 Self.Tell("get");
             });
@@ -123,7 +124,6 @@ namespace BattleShipConsole
             });
 
             _selectedShips = new List<Ship>();
-            _stack = new Stack<Tuple<string, int>>(TablesAndShips.Ships);
             Self.Tell("get");
         }
 
@@ -147,9 +147,10 @@ namespace BattleShipConsole
                 return false;
             }
 
-            if (startPoint - endPoint != len)
+            var distance = startPoint.DistanceTo(endPoint);
+            if (distance != len)
             {
-                Tell("Length of the ship is not " + len + ", but " + (startPoint - endPoint));
+                Tell("Length of the ship is not " + len + ", but " + distance);
                 return false;
             }
 

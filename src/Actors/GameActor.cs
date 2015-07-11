@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Akka.Actor;
 using Messages.CSharp;
 using Messages.CSharp.Containers;
@@ -10,15 +11,28 @@ namespace Actors.CSharp
 {
     public class GameActor : BattleShipActor
     {
-        private ActorInfoContainer _player1;
-        private ActorInfoContainer _player2;
+        private class PlayerContainer
+        {
+            public ActorInfoContainer Player { get; private set; }
+            public IActorRef Table { get; private set; }
+            public bool IsInitialized { get; private set; }
 
-        private IActorRef _player1Table;
-        private IActorRef _player2Table;
+            public PlayerContainer(ActorInfoContainer player)
+            {
+                Player = player;
+                Table = null;
+                IsInitialized = false;
+            }
 
-        private bool _player1Initialized;
-        private bool _player2Initialized;
+            public void CreateTable(Guid gameToken, IReadOnlyList<Ship> ships)
+            {
+                Table = Context.ActorOf(Props.Create(() => new GameTableActor(gameToken, ships)), "P1:" + Player.Name);
+                IsInitialized = true;
+            }
+        }
 
+        private PlayerContainer _current;
+        private PlayerContainer _opponent;
         private readonly Guid _gameToken;
 
         public GameActor(Guid gameToken)
@@ -27,11 +41,22 @@ namespace Actors.CSharp
 
             Receive<MessagePlayerJoining>(IsForMe, message =>
             {
-                GameLog("Player 1 arrived");
-                _player1 = message.Player;
-                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.Created, Self));
+                var player = new PlayerContainer(message.Player);
+                GameLog("Player " + message.Player.Name + " arrived");
+                if (_current == null)
+                {
+                    _current = player;
+                    _current.Player.Actor.Tell(new MessageGameStatusUpdate(message.Token, _gameToken, GameStatus.Created, Self));
+                }
+                else
+                {
+                    _opponent = player;
+                    _opponent.Player.Actor.Tell(new MessageGameStatusUpdate(message.Token, _gameToken, GameStatus.PlayerJoined, Self));
 
-                Become(WaitingForSecondPlayer);
+                    _current.Player.Actor.Tell(new MessageGiveMeYourPositions(_current.Player.Token, _gameToken, TablesAndShips.Ships), Self);
+                    _opponent.Player.Actor.Tell(new MessageGiveMeYourPositions(_opponent.Player.Token, _gameToken, TablesAndShips.Ships), Self);
+                    Become(WaitingForPositions);
+                }
             });
 
             ReceiveAny(message =>
@@ -40,54 +65,26 @@ namespace Actors.CSharp
             });
         }
 
-        private void WaitingForSecondPlayer()
-        {
-            Receive<MessagePlayerJoining>(message => IsForMe(message) && message.Player != _player1, message =>
-            {
-                GameLog("Player 2 arrived");
-                _player2 = message.Player;
-
-                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.PlayerJoined, Self));
-
-                _player1.Actor.Tell(new MessageGiveMeYourPositions(_player1.Token, _gameToken), Self);
-                _player2.Actor.Tell(new MessageGiveMeYourPositions(_player2.Token, _gameToken), Self);
-
-                Become(WaitingForPositions);
-            });
-
-            ReceiveAny(message =>
-            {
-                GameLog("Unhandled message of type " + message.GetType() + " received in WaitingForSecondPlayer state...");
-            });
-        }
-
         private void WaitingForPositions()
         {
-            Receive<MessagePlayerPositions>(message => IsForMe(message) && message.Token == _player1.Token && !_player1Initialized, message =>
+            Receive<MessagePlayerPositions>(IsForMe, message =>
             {
-                GameLog("Player 1 ships have arrived");
-                _player1Initialized = true;
-                _player1Table = Context.ActorOf(Props.Create(() => new GameTableActor(_gameToken, message.Ships)), "P1:" + _player1.Name);
+                var player = GetPlayer(message.Token);
+                var otherPlayer = GetOtherPlayer(message.Token);
 
-                if (_player2Initialized)
+                GameLog("Player " + player.Player.Name + " ships have arrived");
+
+                player.CreateTable(_gameToken, message.Ships);
+                if (player.IsInitialized && otherPlayer.IsInitialized)
                 {
-                    _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.GameStartedOpponentStarts, Self), Self);
-                    _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.GameStartedYouStart, Self), Self);
-                    Become(PlayerTwo);
-                }
-            });
-
-            Receive<MessagePlayerPositions>(message => IsForMe(message) && message.Token == _player2.Token && !_player2Initialized, message =>
-            {
-                GameLog("Player 2 ships have arrived");
-                _player2Initialized = true;
-                _player2Table = Context.ActorOf(Props.Create(() => new GameTableActor(_gameToken, message.Ships)), "P2:" + _player2.Name);
-
-                if (_player1Initialized)
-                {
-                    _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.GameStartedYouStart, Self), Self);
-                    _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.GameStartedOpponentStarts, Self), Self);
-                    Become(PlayerOne);
+                    // First player that provided the ships will start the game
+                    otherPlayer.Player.Actor.Tell(new MessageGameStatusUpdate(otherPlayer.Player.Token, _gameToken, GameStatus.GameStartedYouStart, Self), Self);
+                    player.Player.Actor.Tell(new MessageGameStatusUpdate(player.Player.Token, _gameToken, GameStatus.GameStartedOpponentStarts, Self), Self);
+                    if (otherPlayer.Player.Token != _current.Player.Token)
+                    {
+                        SwithSides();
+                    }
+                    Become(GameOn);
                 }
             });
 
@@ -97,53 +94,53 @@ namespace Actors.CSharp
             });
         }
 
-        // TODO: get rid of duplicate code
+        // TODO: table to current user where there is no ship info
 
-        private void PlayerOne()
+        private void GameOn()
         {
             #region Player message
 
-            Receive<MessageMissile>(IsForMe, message =>
+            Receive<MessageMissile>(message => IsForMe(message) && message.Token == _current.Player.Token, message => // _current.Player.Actor |> _opponent.Table
             {
-                _player2Table.Tell(message, Self);
+                _opponent.Table.Tell(message, Self);
             });
 
             #endregion
 
             #region Table responses
 
-            Receive<Point[]>(message =>
+            Receive<Point[]>(message => // _opponent.Table |> _opponent.Player.Actor
             {
-                _player2.Actor.Tell(new MessageTable(_player2.Token, _gameToken, message), Self);
+                _opponent.Player.Actor.Tell(new MessageTable(_opponent.Player.Token, _gameToken, message), Self);
             });
 
             Receive<MessageMissileWasAHit>(IsForMe, message =>
             {
                 string postfix = message.ShipDestroyed ? " The ship was destroyed!" : "";
-                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Missile was a hit at " + message.Point + "." + postfix), Self);
-                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.None, Self, "Opponents missile was a hit at " + message.Point + "." + postfix), Self);
+                _current.Player.Actor.Tell(new MessageGameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Missile was a hit at " + message.Point + "." + postfix), Self);
+                _opponent.Player.Actor.Tell(new MessageGameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.None, Self, "Opponents missile was a hit at " + message.Point + "." + postfix), Self);
             });
 
             Receive<MessageMissileDidNotHitShip>(IsForMe, message =>
             {
-                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponents missile did not hit at " + message.Point), Self);
-                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.None, Self, "Your missile did not hit at " + message.Point), Self);
-                Become(PlayerTwo);
+                _opponent.Player.Actor.Tell(new MessageGameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponents missile did not hit at " + message.Point), Self);
+                _current.Player.Actor.Tell(new MessageGameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.None, Self, "Your missile did not hit at " + message.Point), Self);
+                SwithSides();
             });
 
             Receive<MessageGameOver>(IsForMe, message =>
             {
-                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.YouLost, Self), Self);
-                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.YouWon, Self), Self);
-                Context.Parent.Tell(new MessagePlayersFree(_gameToken, _player1.Token, _player2.Token), Self);
+                _opponent.Player.Actor.Tell(new MessageGameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.YouLost, Self), Self);
+                _current.Player.Actor.Tell(new MessageGameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.YouWon, Self), Self);
+                Context.Parent.Tell(new MessagePlayersFree(_gameToken, _current.Player.Token, _opponent.Player.Token), Self);
                 Become(GameOver);
             });
 
             Receive<MessageAlreadyHit>(IsForMe, message =>
             {
-                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponent used the same point again at " + message.Point));
-                _player1.Actor.Tell(new MessageMissileAlreadyHit(_player1.Token, _gameToken, message.Point), Self);
-                Become(PlayerTwo);
+                _opponent.Player.Actor.Tell(new MessageGameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponent used the same point again at " + message.Point));
+                _current.Player.Actor.Tell(new MessageMissileAlreadyHit(_current.Player.Token, _gameToken, message.Point), Self);
+                SwithSides();
             });
 
             #endregion
@@ -154,61 +151,6 @@ namespace Actors.CSharp
             });
         }
 
-        private void PlayerTwo()
-        {
-            #region Player message
-
-            Receive<MessageMissile>(IsForMe, message =>
-            {
-                _player1Table.Tell(message, Self);
-            });
-
-            #endregion
-
-            #region Table responses
-
-            Receive<Point[]>(message =>
-            {
-                _player1.Actor.Tell(new MessageTable(_player1.Token, _gameToken, message), Self);
-            });
-
-            Receive<MessageMissileWasAHit>(IsForMe, message =>
-            {
-                string postfix = message.ShipDestroyed ? " The ship was destroyed!" : "";
-                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Missile was a hit at " + message.Point + "." + postfix), Self);
-                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.None, Self, "Opponents missile was a hit at " + message.Point + "." + postfix), Self);
-            });
-
-            Receive<MessageMissileDidNotHitShip>(IsForMe, message =>
-            {
-                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponents missile did not hit at " + message.Point), Self);
-                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.None, Self, "Your missile did not hit at " + message.Point), Self);
-                Become(PlayerOne);
-            });
-
-            Receive<MessageGameOver>(IsForMe, message =>
-            {
-                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.YouLost, Self), Self);
-                _player2.Actor.Tell(new MessageGameStatusUpdate(_player2.Token, _gameToken, GameStatus.YouWon, Self), Self);
-                Context.Parent.Tell(new MessagePlayersFree(_gameToken, _player1.Token, _player2.Token), Self);
-                Become(GameOver);
-            });
-
-            Receive<MessageAlreadyHit>(IsForMe, message =>
-            {
-                _player1.Actor.Tell(new MessageGameStatusUpdate(_player1.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponent used the same point again at " + message.Point));
-                _player2.Actor.Tell(new MessageMissileAlreadyHit(_player2.Token, _gameToken, message.Point), Self);
-                Become(PlayerOne);
-            });
-
-            #endregion
-
-            ReceiveAny(message =>
-            {
-                GameLog("Unhandled message of type " + message.GetType() + " received in PlayerTwo state...");
-            });
-        }
-
         private void GameOver()
         {
             GameLog("Game over for " + _gameToken);
@@ -216,6 +158,23 @@ namespace Actors.CSharp
             {
                 GameLog("Unhandled message of type " + message.GetType() + " received in GameOver state...");
             });
+        }
+
+        private void SwithSides()
+        {
+            var current = _current;
+            _current = _opponent;
+            _opponent = current;
+        }
+
+        private PlayerContainer GetPlayer(Guid token)
+        {
+            return _current.Player.Token == token ? _current : _opponent;
+        }
+
+        private PlayerContainer GetOtherPlayer(Guid token)
+        {
+            return _current.Player.Token == token ? _opponent : _current;
         }
 
         private bool IsForMe(GameMessageWithToken message)

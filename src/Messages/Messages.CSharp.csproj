@@ -59,6 +59,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Pieces\Ship.cs" />
     <Compile Include="StatusMessages.cs" />
+    <Compile Include="TablesAndShips.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

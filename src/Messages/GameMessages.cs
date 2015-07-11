@@ -97,8 +97,12 @@ namespace Messages.CSharp
 
     public class MessageGiveMeYourPositions : GameMessageWithToken
     {
-        public MessageGiveMeYourPositions(Guid token, Guid gameToken) : base(token, gameToken)
+        public IReadOnlyCollection<Tuple<string, int>> Ships { get; private set; }
+
+        public MessageGiveMeYourPositions(Guid token, Guid gameToken, IReadOnlyCollection<Tuple<string, int>> ships)
+            : base(token, gameToken)
         {
+            Ships = ships;
         }
     }
 

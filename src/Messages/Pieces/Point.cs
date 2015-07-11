@@ -17,6 +17,11 @@ namespace Messages.CSharp.Pieces
             HasHit = hasHit;
         }
 
+        public decimal DistanceTo(Point other)
+        {
+            return this - other + 1;
+        }
+
         public int CompareTo(Point other)
         {
             if (other.Y < Y)
@@ -63,17 +68,9 @@ namespace Messages.CSharp.Pieces
             return string.Format("{0}:{1}", X, Y);
         }
 
-        public static int operator -(Point left, Point right)
+        public static decimal operator -(Point left, Point right)
         {
-            if (left.X == right.X)
-            {
-                return Math.Abs(left.Y - right.Y) + 1;
-            }
-            if (left.Y == right.Y)
-            {
-                return Math.Abs(left.X - right.X) + 1;
-            }
-            return -1;
+            return (decimal)Math.Sqrt(Math.Pow(left.X - right.X, 2) + Math.Pow(left.Y - right.Y, 2));
         }
 
     }
