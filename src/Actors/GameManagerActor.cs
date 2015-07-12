@@ -79,7 +79,7 @@ namespace Actors.CSharp
 
         #region Helpers
 
-        private ActorInfoContainer GetPlayer(MessageWithToken message, out string error)
+        private ActorInfoContainer GetPlayer(Message.WithToken message, out string error)
         {
             error = null;
             ActorInfoContainer player;

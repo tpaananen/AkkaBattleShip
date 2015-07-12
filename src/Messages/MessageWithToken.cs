@@ -2,15 +2,18 @@
 
 namespace Messages.CSharp
 {
-    public abstract class MessageWithToken
+    public partial class Message
     {
-
-        public Guid Token { get; private set; }
-
-        protected MessageWithToken(Guid token)
+        public abstract class WithToken
         {
-            Token = token;
-        }
 
+            public Guid Token { get; private set; }
+
+            protected WithToken(Guid token)
+            {
+                Token = token;
+            }
+
+        }
     }
 }

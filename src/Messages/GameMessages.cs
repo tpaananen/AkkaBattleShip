@@ -9,7 +9,7 @@ namespace Messages.CSharp
     public partial class Message
     {
 
-        public class CreateGame : MessageWithToken
+        public class CreateGame : WithToken
         {
             public CreateGame(Guid token)
                 : base(token)
@@ -17,7 +17,7 @@ namespace Messages.CSharp
             }
         }
 
-        public class UnableToCreateGame : MessageWithToken
+        public class UnableToCreateGame : WithToken
         {
             public string Error { get; private set; }
 
@@ -65,7 +65,7 @@ namespace Messages.CSharp
             }
         }
 
-        public abstract class GameMessageWithToken : MessageWithToken
+        public abstract class GameMessageWithToken : WithToken
         {
             public Guid GameToken { get; private set; }
 
