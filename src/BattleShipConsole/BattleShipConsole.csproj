@@ -70,6 +70,7 @@
   <ItemGroup>
     <Compile Include="ConsoleActor.cs" />
     <Compile Include="ConsoleGuardianActor.cs" />
+    <Compile Include="ConsoleReaderActor.cs" />
     <Compile Include="ConsoleTeller.cs" />
     <Compile Include="PointReader.cs" />
     <Compile Include="Program.cs" />

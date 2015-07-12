@@ -18,17 +18,21 @@ namespace Actors.CSharp
         private readonly string _name;
 
         private readonly ICanTell _gameManager;
+        private readonly IActorRef _reader;
 
-        public PlayerActor(string name, Props propsForUserInteracting)
+        public PlayerActor(string name, Props propsForUserInteracting, IActorRef reader)
         {
+            _reader = reader;
             _name = name;
             _playerUserInterface = Context.ActorOf(propsForUserInteracting, "ui");
+            _playerUserInterface.Tell(_playerUserInterface);
             _gameManager = ActorSystemContext.VirtualManager();
             Become(Unregistered);
         }
 
         protected override void PreRestart(Exception reason, object message)
         {
+            _reader.Tell(_playerUserInterface);
             if (_token != Guid.Empty)
             {
                 _gameManager.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);

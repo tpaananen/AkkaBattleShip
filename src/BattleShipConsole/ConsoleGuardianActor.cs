@@ -8,13 +8,16 @@ namespace BattleShipConsole
     {
         private int _counter = 0;
         private readonly Props _consoleUi;
+        private readonly IActorRef _reader;
 
         public ConsoleGuardianActor()
         {
+            _reader = Context.ActorOf(Props.Create(() => new ConsoleReaderActor()), "reader");
             _consoleUi = Props.Create(() => new ConsoleActor());
+
             Receive<Message.CreatePlayer>(message =>
             {
-                Context.ActorOf(Props.Create(() => new PlayerActor(message.Name, _consoleUi)), (++_counter).ToString());
+                Context.ActorOf(Props.Create(() => new PlayerActor(message.Name, _consoleUi, _reader)), (++_counter).ToString());
             });
         }
 

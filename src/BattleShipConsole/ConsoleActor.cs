@@ -31,33 +31,13 @@ namespace BattleShipConsole
             Receive<string>(message => message == "coord", message =>
             {
                 Tell("Your turn, give the next position to hit (format: A10) : ");
-                var position = Read();
-                Point point;
-                if (!_pointReader.ParsePoint(position, out point))
-                {
-                    Self.Tell("coord");
-                    return;
-                }
-                Context.Parent.Tell(point, Self);
+                Become(GettingSinglePoint);
             });
 
             Receive<string>(message => message == "join", message =>
             {
                 Tell("Press [J] to join to a game, [E] to exit: ");
-                var response = Read();
-                if (string.Compare(response, "J", StringComparison.InvariantCultureIgnoreCase) == 0)
-                {
-                    Context.Parent.Tell("join", Self);
-                }
-                else if (string.Compare(response, "E", StringComparison.InvariantCultureIgnoreCase) == 0)
-                {
-                    Context.Parent.Tell("unregister", Self);
-                }
-                else
-                {
-                    Tell("Invalid option '" + response + "'");
-                    Self.Tell("join");
-                }
+                Become(Waiting);
             });
 
             Receive<Message.GameTable>(message =>
@@ -71,24 +51,66 @@ namespace BattleShipConsole
             });
         }
 
+        private void Waiting()
+        {
+            Receive<string>(message =>
+            {
+                if (string.Compare(message, "J", StringComparison.InvariantCultureIgnoreCase) == 0)
+                {
+                    Context.Parent.Tell("join", Self);
+                    Become(Idle);
+                }
+                else if (string.Compare(message, "E", StringComparison.InvariantCultureIgnoreCase) == 0)
+                {
+                    Context.Parent.Tell("unregister", Self);
+                }
+                else
+                {
+                    Tell("Invalid option '" + message + "'");
+                    Become(Idle);
+                    Self.Tell("join");
+                }
+            });
+        }
+
+        private void GettingSinglePoint()
+        {
+            Receive<string>(message =>
+            {
+                Point point;
+                if (!_pointReader.ParsePoint(message, out point))
+                {
+                    Become(Idle);
+                    Self.Tell("coord");
+                    return;
+                }
+                Context.Parent.Tell(point, Self);
+                Become(Idle);
+            });
+        }
+
         private void GettingPoints()
         {
             Receive<string>(message => message == "get" && _stack.Count != 0, message =>
             {
-                var item = _stack.Pop();
+                var item = _stack.Peek();
                 Tell("Give coordinates for " + item.Item1 + " (len: " + item.Item2 + ": ");
-                var coords = Read();
-                if (!_pointReader.CreateShip(coords, item.Item2, _selectedShips))
-                {
-                    _stack.Push(item);
-                }
-                Self.Tell("get");
             });
 
             Receive<string>(message => message == "get" && _stack.Count == 0, message =>
             {
                 Context.Parent.Tell(new Message.ShipPositions(Guid.Empty, Guid.Empty, _selectedShips), Self);
                 Become(Idle);
+            });
+
+            Receive<string>(message =>
+            {
+                var item = _stack.Pop();
+                if (!_pointReader.CreateShip(message, item.Item2, _selectedShips))
+                {
+                    _stack.Push(item);
+                }
+                Self.Tell("get");
             });
 
             _selectedShips = new List<Ship>();
@@ -104,11 +126,6 @@ namespace BattleShipConsole
         private static void Tell(string line)
         {
             Console.WriteLine(line);
-        }
-
-        private static string Read()
-        {
-            return Console.ReadLine();
         }
     }
 }
