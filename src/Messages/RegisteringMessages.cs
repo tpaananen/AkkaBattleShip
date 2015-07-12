@@ -44,11 +44,11 @@ namespace Messages.CSharp
 
         public class CreatePlayer
         {
-            public Props Props { get; private set; }
+            public string Name { get; private set; }
 
-            public CreatePlayer(Props props)
+            public CreatePlayer(string name)
             {
-                Props = props;
+                Name = name;
             }
         }
     }

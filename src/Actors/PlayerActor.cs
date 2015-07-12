@@ -27,6 +27,16 @@ namespace Actors.CSharp
             Become(Unregistered);
         }
 
+        protected override void PreRestart(Exception reason, object message)
+        {
+            if (_token != Guid.Empty)
+            {
+                _gameManager.Tell(new Message.UnregisterPlayer(_token), Self);
+            }
+            _playerUserInterface.Tell(Kill.Instance, Self);
+            base.PreRestart(reason, message);
+        }
+
         protected override void PreStart()
         {
             Self.Tell("register");
@@ -35,6 +45,9 @@ namespace Actors.CSharp
 
         private void Unregistered()
         {
+            _currentGameToken = Guid.Empty;
+            _currentGame = null;
+
             Receive<string>(message => message == "register", message =>
             {
                 _gameManager.Tell(new Message.RegisterPlayer(_name), Self);
@@ -45,6 +58,7 @@ namespace Actors.CSharp
                 if (message.IsValid)
                 {
                     _token = message.Token;
+                    _playerUserInterface.Tell("Registered to server with token " + message.Token, Self);
                     Become(InLobby);
                 }
                 else
@@ -64,7 +78,6 @@ namespace Actors.CSharp
         {
             _currentGameToken = Guid.Empty;
             _currentGame = null;
-            
             Receive<string>(message => message == "join", message =>
             {
                 _gameManager.Tell(new Message.CreateGame(_token), Self);
@@ -207,7 +220,12 @@ namespace Actors.CSharp
         {
             return new OneForOneStrategy(10, 10, ex =>
             {
-                Log.Error(ex.ToString());
+                if (ex is ActorKilledException)
+                {
+                    return Directive.Stop;
+                }
+
+                Log.Error(ex.Message);
                 return Directive.Restart;
             });
         }

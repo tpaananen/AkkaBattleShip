@@ -7,12 +7,14 @@ namespace BattleShipConsole
     public class ConsoleGuardianActor : BattleShipActor
     {
         private int _counter = 0;
+        private readonly Props _consoleUi;
 
         public ConsoleGuardianActor()
         {
+            _consoleUi = Props.Create(() => new ConsoleActor());
             Receive<Message.CreatePlayer>(message =>
             {
-                Context.ActorOf(message.Props, (++_counter).ToString());
+                Context.ActorOf(Props.Create(() => new PlayerActor(message.Name, _consoleUi)), (++_counter).ToString());
             });
         }
 
@@ -20,7 +22,7 @@ namespace BattleShipConsole
         {
             return new OneForOneStrategy(5, 1000, ex =>
             {
-                Log.Error(ex.ToString());
+                Log.Error(ex.Message);
                 return Directive.Restart;
             });
         }

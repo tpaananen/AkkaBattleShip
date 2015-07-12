@@ -10,18 +10,15 @@ namespace BattleShipConsole
     {
         static void Main(string[] args)
         {
+            Console.WriteLine("Give me ya name: ");
+            var name = Console.ReadLine();
+
             // Client
             var config = ConfigurationFactory.Load();
             using (var system = ActorSystemContext.CreateActorSystemContext(config))
             {
                 var consoleGuardian = system.ActorOf(Props.Create(() => new ConsoleGuardianActor()), "playerguardian");
-
-                Console.WriteLine("Give me ya name: ");
-                var name = Console.ReadLine();
-
-                var props = Props.Create(() => new ConsoleActor());
-                var playerProps = Props.Create(() => new PlayerActor(name, props));
-                consoleGuardian.Tell(new Message.CreatePlayer(playerProps));
+                consoleGuardian.Tell(new Message.CreatePlayer(name));
                 system.AwaitTermination();
             }
         }
