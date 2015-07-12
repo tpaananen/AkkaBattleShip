@@ -159,6 +159,10 @@ namespace Actors.CSharp
                 {
                     _currentGame = null;
                     _currentGameToken = Guid.Empty;
+                    if (!string.IsNullOrEmpty(message.Message))
+                    {
+                        _playerUserInterface.Tell(message.Message, Self);
+                    }
                     Become(InLobby);
                 }
             });
@@ -202,10 +206,11 @@ namespace Actors.CSharp
 
             Receive<Message.GameStatusUpdate>(message => IsForMe(message) && 
                 (message.Status == GameStatus.YouWon || 
-                 message.Status == GameStatus.YouLost), 
+                 message.Status == GameStatus.YouLost || 
+                 message.Status == GameStatus.GameOver), 
             message =>
             {
-                if (!string.IsNullOrEmpty(message.Message))
+                if (message.Status != GameStatus.GameOver)
                 {
                     _playerUserInterface.Tell(message.Status == GameStatus.YouWon ? "You won!" : "You lost!", Self);
                 }

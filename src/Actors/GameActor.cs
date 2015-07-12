@@ -43,7 +43,7 @@ namespace Actors.CSharp
         public GameActor(Guid gameToken)
         {
             _gameToken = gameToken;
-
+            
             Receive<Message.PlayerJoining>(IsForMe, message =>
             {
                 var player = new PlayerContainer(message.Player);
@@ -78,6 +78,9 @@ namespace Actors.CSharp
 
         private void WaitingForPositions()
         {
+            SetReceiveTimeout(TimeSpan.FromSeconds(120));
+            GameLog("Using 120 seconds receive timeout");
+
             Receive<Message.ShipPositions>(IsForMe, message =>
             {
                 var player = GetPlayer(message.Token);
@@ -102,6 +105,11 @@ namespace Actors.CSharp
             Receive<Message.StopGame>(IsForMe, message =>
             {
                 HandleStopGame(message.Token);
+            });
+
+            Receive<ReceiveTimeout>(message =>
+            {
+                HandleStopGame(Guid.Empty, true);
             });
 
             ReceiveAny(message =>
@@ -165,6 +173,11 @@ namespace Actors.CSharp
                 HandleStopGame(message.Token);
             });
 
+            Receive<ReceiveTimeout>(message =>
+            {
+                HandleStopGame(Guid.Empty, true);
+            });
+
             ReceiveAny(message =>
             {
                 GameLog("Unhandled message of type " + message.GetType() + " received in PlayerOne state...");
@@ -175,26 +188,22 @@ namespace Actors.CSharp
         {
             GameLog("Game over for " + _gameToken);
             HandleStopGame(Guid.Empty);
-            ReceiveAny(message =>
-            {
-                GameLog("Unhandled message of type " + message.GetType() + " received in GameOver state...");
-            });
         }
 
-        private void HandleStopGame(Guid userTokenWhoRequestedStopping)
+        private void HandleStopGame(Guid userTokenWhoRequestedStopping, bool timeout = false)
         {
-            var userRequested = userTokenWhoRequestedStopping != Guid.Empty;
-            if (userRequested)
+            if (userTokenWhoRequestedStopping != Guid.Empty)
             {
                 const string message = "Game forced to stop";
                 GameLog(message);
                 var player = GetOtherPlayer(userTokenWhoRequestedStopping);
-                player.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.YouLost, Self, message), Self);
+                player.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.GameOver, Self, message), Self);
             }
             else
             {
-                _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.YouLost, Self), Self);
-                _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.YouWon, Self), Self);
+                string message = timeout ? "Game timed out" : null;
+                _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, timeout ? GameStatus.GameOver : GameStatus.YouLost, Self, message), Self);
+                _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, timeout ? GameStatus.GameOver : GameStatus.YouWon, Self, message), Self);
             }
             Context.Parent.Tell(new Message.PlayersFree(_gameToken, _current.Player.Token, _opponent.Player.Token), Self);
         }
