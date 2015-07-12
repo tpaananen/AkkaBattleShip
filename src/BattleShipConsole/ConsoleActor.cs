@@ -21,28 +21,10 @@ namespace BattleShipConsole
 
         private void Idle()
         {
-            Receive<Message.GiveMeYourPositions>(message =>
-            {
-                Tell("Coordinates format: A1:A5 -> a length of 4 ship vertically positioned");
-                _stack = new Stack<Tuple<string, int>>(message.Ships);
-                Become(GettingPoints);
-            });
-
-            Receive<string>(message => message == "coord", message =>
-            {
-                Tell("Your turn, give the next position to hit (format: A10) : ");
-                Become(GettingSinglePoint);
-            });
-
             Receive<string>(message => message == "join", message =>
             {
+                Become(WaitingOption);
                 Tell("Press [J] to join to a game, [E] to exit: ");
-                Become(Waiting);
-            });
-
-            Receive<Message.GameTable>(message =>
-            {
-                _tableWriter.ShowTable(message.Points);
             });
 
             Receive<string>(message =>
@@ -51,17 +33,18 @@ namespace BattleShipConsole
             });
         }
 
-        private void Waiting()
+        private void WaitingOption()
         {
             Receive<string>(message =>
             {
                 if (string.Compare(message, "J", StringComparison.InvariantCultureIgnoreCase) == 0)
                 {
+                    Become(Waiting);
                     Context.Parent.Tell("join", Self);
-                    Become(Idle);
                 }
                 else if (string.Compare(message, "E", StringComparison.InvariantCultureIgnoreCase) == 0)
                 {
+                    Become(Idle);
                     Context.Parent.Tell("unregister", Self);
                 }
                 else
@@ -70,6 +53,27 @@ namespace BattleShipConsole
                     Become(Idle);
                     Self.Tell("join");
                 }
+            });
+        }
+
+        private void Waiting()
+        {
+            Receive<Message.GiveMeYourPositions>(message =>
+            {
+                Tell("Coordinates format: A1:A5 -> a length of 4 ship vertically positioned");
+                _stack = new Stack<Tuple<string, int>>(message.Ships);
+                Become(GettingPoints);
+            });
+
+            Receive<Message.GameTable>(message =>
+            {
+                _tableWriter.ShowTable(message.Points);
+            });
+
+            Receive<string>(message => message == "coord", message =>
+            {
+                Tell("Your turn, give the next position to hit (format: A10) : ");
+                Become(GettingSinglePoint);
             });
         }
 
@@ -84,8 +88,8 @@ namespace BattleShipConsole
                     Self.Tell("coord");
                     return;
                 }
+                Become(Waiting);
                 Context.Parent.Tell(point, Self);
-                Become(Idle);
             });
         }
 
@@ -94,13 +98,14 @@ namespace BattleShipConsole
             Receive<string>(message => message == "get" && _stack.Count != 0, message =>
             {
                 var item = _stack.Peek();
-                Tell("Give coordinates for " + item.Item1 + " (len: " + item.Item2 + ": ");
+                Tell("Give coordinates for " + item.Item1 + " (len: " + item.Item2 + "): ");
             });
 
             Receive<string>(message => message == "get" && _stack.Count == 0, message =>
             {
+                Become(Waiting);
                 Context.Parent.Tell(new Message.ShipPositions(Guid.Empty, Guid.Empty, _selectedShips), Self);
-                Become(Idle);
+                Tell("That's all, waiting for game to begin...");
             });
 
             Receive<string>(message =>

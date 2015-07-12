@@ -25,7 +25,7 @@ namespace Actors.CSharp
             _reader = reader;
             _name = name;
             _playerUserInterface = Context.ActorOf(propsForUserInteracting, "ui");
-            _playerUserInterface.Tell(_playerUserInterface);
+            _reader.Tell(_playerUserInterface);
             _gameManager = ActorSystemContext.VirtualManager();
             Become(Unregistered);
         }
@@ -37,7 +37,7 @@ namespace Actors.CSharp
             {
                 _gameManager.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);
             }
-            _playerUserInterface.Tell(Kill.Instance, Self);
+            _playerUserInterface.Tell(PoisonPill.Instance, Self);
             base.PreRestart(reason, message);
         }
 
@@ -152,12 +152,11 @@ namespace Actors.CSharp
 
                 if (message.Status == GameStatus.GameStartedOpponentStarts)
                 {
-                    Become(GameStarted);
+                    _playerUserInterface.Tell("Opponent starts...");
                 }
                 else if (message.Status == GameStatus.GameStartedYouStart)
                 {
-                    _playerUserInterface.Tell("coord", Self);
-                    Become(GameStarted);
+                    _playerUserInterface.Tell("coord", Self);                    
                 }
                 else
                 {
@@ -168,7 +167,9 @@ namespace Actors.CSharp
                         _playerUserInterface.Tell(message.Message, Self);
                     }
                     Become(InLobby);
+                    return;
                 }
+                Become(GameStarted);
             });
 
             ReceiveAny(message =>
@@ -240,16 +241,7 @@ namespace Actors.CSharp
 
         protected override SupervisorStrategy SupervisorStrategy()
         {
-            return new OneForOneStrategy(10, 10, ex =>
-            {
-                if (ex is ActorKilledException)
-                {
-                    return Directive.Stop;
-                }
-
-                Log.Error(ex.Message);
-                return Directive.Restart;
-            });
+            return new OneForOneStrategy(ex => Directive.Resume);
         }
     }
 }
