@@ -141,5 +141,12 @@ namespace Messages.CSharp
             }
 
         }
+
+        public class StopGame : WithToken
+        {
+            public StopGame(Guid gameToken) : base(gameToken)
+            {
+            }
+        }
     }
 }

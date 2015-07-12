@@ -65,6 +65,11 @@ namespace Actors.CSharp
                 }
             });
 
+            Receive<Message.StopGame>(message => message.Token == _gameToken, message =>
+            {
+                HandleStopGame(true);
+            });
+
             ReceiveAny(message =>
             {
                 GameLog("Unhandled message of type " + message.GetType() + " received in intial state...");
@@ -92,6 +97,11 @@ namespace Actors.CSharp
                     }
                     Become(GameOn);
                 }
+            });
+
+            Receive<Message.StopGame>(message => message.Token == _gameToken, message =>
+            {
+                HandleStopGame(true);
             });
 
             ReceiveAny(message =>
@@ -137,9 +147,6 @@ namespace Actors.CSharp
 
             Receive<Message.GameOver>(IsForMe, message =>
             {
-                _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.YouLost, Self), Self);
-                _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.YouWon, Self), Self);
-                Context.Parent.Tell(new Message.PlayersFree(_gameToken, _current.Player.Token, _opponent.Player.Token), Self);
                 Become(GameOver);
             });
 
@@ -153,6 +160,11 @@ namespace Actors.CSharp
 
             #endregion
 
+            Receive<Message.StopGame>(message => message.Token == _gameToken, message =>
+            {
+                HandleStopGame(true);
+            });
+
             ReceiveAny(message =>
             {
                 GameLog("Unhandled message of type " + message.GetType() + " received in PlayerOne state...");
@@ -162,10 +174,22 @@ namespace Actors.CSharp
         private void GameOver()
         {
             GameLog("Game over for " + _gameToken);
+            HandleStopGame(false);
             ReceiveAny(message =>
             {
                 GameLog("Unhandled message of type " + message.GetType() + " received in GameOver state...");
             });
+        }
+
+        private void HandleStopGame(bool noWinner)
+        {
+            if (noWinner)
+            {
+                GameLog("Game forced to stop...");
+            }
+            _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.YouLost, Self), Self);
+            _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, noWinner ? GameStatus.YouLost : GameStatus.YouWon, Self), Self);
+            Context.Parent.Tell(new Message.PlayersFree(_gameToken, _current.Player.Token, _opponent.Player.Token), Self);
         }
 
         private void SwithSides()

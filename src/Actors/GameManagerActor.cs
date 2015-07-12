@@ -41,6 +41,10 @@ namespace Actors.CSharp
                     return;
                 }
                 _players.Remove(Sender);
+                if (message.GameToken != Guid.Empty)
+                {
+                    _gameFactory.Tell(new Message.StopGame(message.GameToken));
+                }
             });
 
             Receive<Message.CreateGame>(HasSender, message =>

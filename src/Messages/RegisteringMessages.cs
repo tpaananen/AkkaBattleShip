@@ -32,13 +32,11 @@ namespace Messages.CSharp
             }
         }
 
-        public class UnregisterPlayer
+        public class UnregisterPlayer : GameMessage
         {
-            public Guid Token { get; private set; }
-
-            public UnregisterPlayer(Guid token)
+            public UnregisterPlayer(Guid token, Guid gameToken) 
+                : base(token, gameToken)
             {
-                Token = token;
             }
         }
 

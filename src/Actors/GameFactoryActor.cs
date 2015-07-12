@@ -52,6 +52,11 @@ namespace Actors.CSharp
                 Context.Parent.Tell(message, Self);
                 Sender.Tell(PoisonPill.Instance);
             });
+
+            Receive<Message.StopGame>(message =>
+            {
+                Context.ActorSelection(message.Token.ToString()).Tell(message, Self);
+            });
         }
 
         protected override SupervisorStrategy SupervisorStrategy()

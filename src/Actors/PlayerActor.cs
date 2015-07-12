@@ -31,7 +31,7 @@ namespace Actors.CSharp
         {
             if (_token != Guid.Empty)
             {
-                _gameManager.Tell(new Message.UnregisterPlayer(_token), Self);
+                _gameManager.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);
             }
             _playerUserInterface.Tell(Kill.Instance, Self);
             base.PreRestart(reason, message);
@@ -118,7 +118,7 @@ namespace Actors.CSharp
 
             Receive<string>(message => message == "unregister", message =>
             {
-                _gameManager.Tell(new Message.UnregisterPlayer(_token), Self);
+                _gameManager.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);
                 ActorSystemContext.System.Shutdown(); // stopping the client
             });
 
