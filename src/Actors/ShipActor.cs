@@ -15,27 +15,27 @@ namespace Actors.CSharp
             _gameToken = gameToken;
             _points = new HashSet<Point>(ship.Points);
 
-            Receive<MessageMissile>(message => message.GameToken == _gameToken, message =>
+            Receive<Message.Missile>(message => message.GameToken == _gameToken, message =>
             {
                 _points.Remove(message.Point);
                 var point = PointHasHit(message.Point);
                 if (_points.Count == 0)
                 {
-                    Context.Parent.Tell(new MessageShipDestroyed(Guid.Empty, _gameToken, point), Self);
+                    Context.Parent.Tell(new Message.ShipDestroyed(Guid.Empty, _gameToken, point), Self);
                     Become(Destroyed);
                 }
                 else
                 {
-                    Context.Parent.Tell(new MessagePartOfTheShipDestroyed(Guid.Empty, _gameToken, point), Self);
+                    Context.Parent.Tell(new Message.PartOfTheShipDestroyed(Guid.Empty, _gameToken, point), Self);
                 }
             });
         }
 
         private void Destroyed()
         {
-            Receive<MessageMissile>(message =>
+            Receive<Message.Missile>(message =>
             {
-                Context.Parent.Tell(new MessageAlreadyHit(Guid.Empty, _gameToken, message.Point), Self);
+                Context.Parent.Tell(new Message.AlreadyHit(Guid.Empty, _gameToken, message.Point), Self);
             });
 
             ReceiveAny(message =>

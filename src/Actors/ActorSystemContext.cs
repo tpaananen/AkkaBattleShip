@@ -25,15 +25,14 @@ namespace Actors.CSharp
         public static ActorSelection VirtualManager()
         {
             var path = CreateActorPathFromConfig("/user/gameManager");
-            var actorPath = ActorPath.Parse(path);
-            return System.ActorSelection(actorPath);
+            return System.ActorSelection(path);
         }
 
-        private static string CreateActorPathFromConfig(string path)
+        private static ActorPath CreateActorPathFromConfig(string path)
         {
             var remotePath = ConfigurationFactory.Load()
                     .GetString("akka.remote.deployment." + path + ".remote");
-            return remotePath + path;
+            return ActorPath.Parse(remotePath + path);
         }
     }
 }

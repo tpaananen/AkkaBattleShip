@@ -52,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Containers\ActorInfoContainer.cs" />
+    <Compile Include="Enumerations.cs" />
     <Compile Include="GameMessages.cs" />
     <Compile Include="MessageWithToken.cs" />
     <Compile Include="Pieces\Point.cs" />

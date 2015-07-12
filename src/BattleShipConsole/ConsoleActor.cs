@@ -20,7 +20,7 @@ namespace BattleShipConsole
 
         private void Idle()
         {
-            Receive<MessageGiveMeYourPositions>(message =>
+            Receive<Message.GiveMeYourPositions>(message =>
             {
                 Tell("Coordinates format: A1:A5 -> a length of 4 ship vertically positioned");
                 _stack = new Stack<Tuple<string, int>>(message.Ships);
@@ -59,7 +59,7 @@ namespace BattleShipConsole
                 }
             });
 
-            Receive<MessageTable>(message =>
+            Receive<Message.GameTable>(message =>
             {
                 Tell("Battleships:");
                 Console.Write("  ");
@@ -119,7 +119,7 @@ namespace BattleShipConsole
 
             Receive<string>(message => message == "get" && _stack.Count == 0, message =>
             {
-                Context.Parent.Tell(new MessagePlayerPositions(Guid.Empty, Guid.Empty, _selectedShips), Self);
+                Context.Parent.Tell(new Message.PlayerPositions(Guid.Empty, Guid.Empty, _selectedShips), Self);
                 Become(Idle);
             });
 

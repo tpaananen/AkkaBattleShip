@@ -19,17 +19,17 @@ namespace Actors.CSharp
             _gameUnderConstruction = null;
             _currentGameToken = Guid.Empty;
 
-            Receive<MessagePlayerArrived>(message =>
+            Receive<Message.PlayerArrived>(message =>
             {
                 _currentGameToken = Guid.NewGuid();
                 Log.Info("The first player arrived, forwarding to game with token " + _currentGameToken);
 
                 _gameUnderConstruction = Context.ActorOf(Props.Create(() => new GameActor(_currentGameToken)), _currentGameToken.ToString());
-                _gameUnderConstruction.Tell(new MessagePlayerJoining(_currentGameToken, message.Player), Self);
+                _gameUnderConstruction.Tell(new Message.PlayerJoining(_currentGameToken, message.Player), Self);
                 Become(WaitingForSecondPlayer);
             });
 
-            Receive<MessagePlayersFree>(HasSender, message =>
+            Receive<Message.PlayersFree>(HasSender, message =>
             {
                 Log.Info("Game factory to destroy the game with token " + message.GameToken);
                 Context.Parent.Tell(message, Self);
@@ -39,14 +39,14 @@ namespace Actors.CSharp
 
         private void WaitingForSecondPlayer()
         {
-            Receive<MessagePlayerArrived>(message =>
+            Receive<Message.PlayerArrived>(message =>
             {
                 Log.Info("The second player arrived, forwarding to game with token " + _currentGameToken);
-                _gameUnderConstruction.Tell(new MessagePlayerJoining(_currentGameToken, message.Player), Self);
+                _gameUnderConstruction.Tell(new Message.PlayerJoining(_currentGameToken, message.Player), Self);
                 Become(WaitingForFirstPlayer);
             });
 
-            Receive<MessagePlayersFree>(HasSender, message =>
+            Receive<Message.PlayersFree>(HasSender, message =>
             {
                 Log.Info("Game factory to destroy the game with token " + message.GameToken);
                 Context.Parent.Tell(message, Self);

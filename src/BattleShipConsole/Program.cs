@@ -21,7 +21,7 @@ namespace BattleShipConsole
 
                 var props = Props.Create(() => new ConsoleActor());
                 var playerProps = Props.Create(() => new PlayerActor(name, props));
-                consoleGuardian.Tell(new MessageCreatePlayer(playerProps));
+                consoleGuardian.Tell(new Message.CreatePlayer(playerProps));
                 system.AwaitTermination();
             }
         }

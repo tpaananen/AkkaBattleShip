@@ -4,61 +4,67 @@ using Messages.CSharp.Pieces;
 
 namespace Messages.CSharp
 {
-
-    public abstract class MessageWithPoint : GameMessageWithToken
+    public partial class Message
     {
-        public Point Point { get; private set; }
 
-        protected MessageWithPoint(Guid token, Guid gameToken, Point point)
-            : base(token, gameToken)
+        public abstract class WithPoint : GameMessageWithToken
         {
-            Point = point;
+            public Point Point { get; private set; }
+
+            protected WithPoint(Guid token, Guid gameToken, Point point)
+                : base(token, gameToken)
+            {
+                Point = point;
+            }
         }
-    }
 
-    public class MessageShipDestroyed : MessageWithPoint
-    {
-        public MessageShipDestroyed(Guid token, Guid gameToken, Point point) : base(token, gameToken, point) { }
-    }
-
-    public class MessageMissileDidNotHitShip : MessageWithPoint
-    {
-        public MessageMissileDidNotHitShip(Guid token, Guid gameToken, Point point) : base(token, gameToken, point)
+        public class ShipDestroyed : WithPoint
         {
+            public ShipDestroyed(Guid token, Guid gameToken, Point point) : base(token, gameToken, point)
+            {
+            }
         }
-    }
 
-    public class MessageAlreadyHit : MessageWithPoint
-    {
-        public MessageAlreadyHit(Guid token, Guid gameToken, Point point) : base(token, gameToken, point)
+        public class MissileDidNotHitShip : WithPoint
         {
+            public MissileDidNotHitShip(Guid token, Guid gameToken, Point point) : base(token, gameToken, point)
+            {
+            }
         }
-    }
 
-    public class MessagePartOfTheShipDestroyed : MessageWithPoint
-    {
-        public MessagePartOfTheShipDestroyed(Guid token, Guid gameToken, Point point) : base(token, gameToken, point)
+        public class AlreadyHit : WithPoint
         {
+            public AlreadyHit(Guid token, Guid gameToken, Point point) : base(token, gameToken, point)
+            {
+            }
         }
-    }
 
-    public class MessageGameOver : GameMessageWithToken
-    {
-        public MessageGameOver(Guid token, Guid gameToken) : base(token, gameToken)
+        public class PartOfTheShipDestroyed : WithPoint
         {
+            public PartOfTheShipDestroyed(Guid token, Guid gameToken, Point point)
+                : base(token, gameToken, point)
+            {
+            }
         }
-    }
 
-    public class MessagePlayersFree
-    {
-        public Guid GameToken { get; private set; }
-
-        public Guid[] Tokens { get; private set; }
-
-        public MessagePlayersFree(Guid gameToken, params Guid[] tokens)
+        public class GameOver : GameMessageWithToken
         {
-            GameToken = gameToken;
-            Tokens = tokens;
+            public GameOver(Guid token, Guid gameToken) : base(token, gameToken)
+            {
+            }
+        }
+
+        public class PlayersFree
+        {
+            public Guid GameToken { get; private set; }
+
+            public Guid[] Tokens { get; private set; }
+
+            public PlayersFree(Guid gameToken, params Guid[] tokens)
+            {
+                GameToken = gameToken;
+                Tokens = tokens;
+            }
         }
     }
 }

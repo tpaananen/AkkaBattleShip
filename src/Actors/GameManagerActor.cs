@@ -16,23 +16,23 @@ namespace Actors.CSharp
         {
             _gameFactory = Context.ActorOf(Props.Create<GameFactoryActor>(), "gameFactory");
 
-            Receive<MessageRegisterPlayer>(HasSender, message =>
+            Receive<Message.RegisterPlayer>(HasSender, message =>
             {
                 Log.Info("Register message from " + message.Name);
                 if (_players.ContainsKey(Sender))
                 {
                     string error = "Received register player message ('" + message.Name + "'), but the sender is already registered.";
                     Log.Error(error);
-                    Sender.Tell(new MessageRegisterPlayerResponse(Guid.Empty, false, error), Self);
+                    Sender.Tell(new Message.RegisterPlayerResponse(Guid.Empty, false, error), Self);
                     return;
                 }
 
                 var container = CreateActorInfoContainer(message.Name, Sender);
                 _players.Add(Sender, container);
-                Sender.Tell(new MessageRegisterPlayerResponse(container.Token, true), Self);
+                Sender.Tell(new Message.RegisterPlayerResponse(container.Token, true), Self);
             });
 
-            Receive<MessageUnregisterPlayer>(HasSender, message =>
+            Receive<Message.UnregisterPlayer>(HasSender, message =>
             {
                 Log.Info("Unregister message from " + message.Token);
                 if (!_players.ContainsKey(Sender))
@@ -43,7 +43,7 @@ namespace Actors.CSharp
                 _players.Remove(Sender);
             });
 
-            Receive<MessageCreateGame>(HasSender, message =>
+            Receive<Message.CreateGame>(HasSender, message =>
             {
                 Log.Info("Create game message from " + message.Token);
 
@@ -52,7 +52,7 @@ namespace Actors.CSharp
                 {
                     error = "The player with the same token is already in a game.";
                     Log.Error(error);
-                    Sender.Tell(new MessageUnableToCreateGame(message.Token, error), Self);
+                    Sender.Tell(new Message.UnableToCreateGame(message.Token, error), Self);
                     return;
                 }
 
@@ -60,14 +60,14 @@ namespace Actors.CSharp
                 if (error != null)
                 {
                     Log.Error(error);
-                    Sender.Tell(new MessageUnableToCreateGame(message.Token, error), Self);
+                    Sender.Tell(new Message.UnableToCreateGame(message.Token, error), Self);
                     return;
                 }
 
-                _gameFactory.Tell(new MessagePlayerArrived(player), Self);
+                _gameFactory.Tell(new Message.PlayerArrived(player), Self);
             });
 
-            Receive<MessagePlayersFree>(HasSender, message =>
+            Receive<Message.PlayersFree>(HasSender, message =>
             {
                 Log.Info("Players free message from game " + message.GameToken);
                 foreach (var token in message.Tokens)

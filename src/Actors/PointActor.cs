@@ -14,19 +14,19 @@ namespace Actors.CSharp
             _point = point;
             _gameToken = gameToken;
 
-            Receive<MessageMissile>(message => message.Point == _point, message =>
+            Receive<Message.Missile>(message => message.Point == _point, message =>
             {
                 PointHasHit();
-                Context.Parent.Tell(new MessageMissileDidNotHitShip(Guid.Empty, _gameToken, message.Point), Self);
+                Context.Parent.Tell(new Message.MissileDidNotHitShip(Guid.Empty, _gameToken, message.Point), Self);
                 Become(Destroyed);
             });
         }
 
         private void Destroyed()
         {
-            Receive<MessageMissile>(message =>
+            Receive<Message.Missile>(message =>
             {
-                Context.Parent.Tell(new MessageAlreadyHit(Guid.Empty, _gameToken, _point), Self);
+                Context.Parent.Tell(new Message.AlreadyHit(Guid.Empty, _gameToken, _point), Self);
             });
         }
 

@@ -24,7 +24,7 @@ namespace Actors.CSharp
 
         private void GameOn()
         {
-            Receive<MessageMissile>(message =>
+            Receive<Message.Missile>(message =>
             {
                 IActorRef pointActor;
                 if (!_pointActors.TryGetValue(message.Point, out pointActor))
@@ -36,12 +36,12 @@ namespace Actors.CSharp
                 pointActor.Tell(message, Self);
             });
 
-            Receive<MessagePartOfTheShipDestroyed>(message =>
+            Receive<Message.PartOfTheShipDestroyed>(message =>
             {
-                Context.Parent.Tell(new MessageMissileWasAHit(Guid.Empty, _gameToken, message.Point), Self);
+                Context.Parent.Tell(new Message.MissileWasAHit(Guid.Empty, _gameToken, message.Point), Self);
             });
 
-            Receive<MessageShipDestroyed>(message =>
+            Receive<Message.ShipDestroyed>(message =>
             {
                 _ships.RemoveAll(ship => ship.Points.Any(point => point == message.Point));
                 if (_ships.Count == 0)
@@ -50,21 +50,21 @@ namespace Actors.CSharp
                 }
                 else
                 {
-                    Context.Parent.Tell(new MessageMissileWasAHit(Guid.Empty, _gameToken, message.Point, true));
+                    Context.Parent.Tell(new Message.MissileWasAHit(Guid.Empty, _gameToken, message.Point, true));
                 }
             });
 
-            Receive<MessageMissileDidNotHitShip>(message =>
+            Receive<Message.MissileDidNotHitShip>(message =>
             {
                 Context.Parent.Tell(message, Self);
             });
 
-            Receive<MessageAlreadyHit>(message =>
+            Receive<Message.AlreadyHit>(message =>
             {
                 Context.Parent.Tell(message, Self);
             });
 
-            Receive<MessageWithPoint>(message =>
+            Receive<Message.WithPoint>(message =>
             {
                 ReplacePoint(message);
                 Context.Parent.Tell(ConstructTableStatusMessage(), Self);
@@ -73,7 +73,7 @@ namespace Actors.CSharp
 
         private void GameOver()
         {
-            Context.Parent.Tell(new MessageGameOver(Guid.Empty, _gameToken), Self);
+            Context.Parent.Tell(new Message.GameOver(Guid.Empty, _gameToken), Self);
 
             ReceiveAny(message =>
             {
@@ -81,7 +81,7 @@ namespace Actors.CSharp
             });
         }
 
-        private void ReplacePoint(MessageWithPoint message)
+        private void ReplacePoint(Message.WithPoint message)
         {
             // point compares only X and Y, so we can use the new point to remove the old one with the same coords
             _currentPoints.Remove(message.Point);

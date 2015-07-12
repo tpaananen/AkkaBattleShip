@@ -44,22 +44,22 @@ namespace Actors.CSharp
         {
             _gameToken = gameToken;
 
-            Receive<MessagePlayerJoining>(IsForMe, message =>
+            Receive<Message.PlayerJoining>(IsForMe, message =>
             {
                 var player = new PlayerContainer(message.Player);
                 GameLog("Player " + message.Player.Name + " arrived");
                 if (_current == null)
                 {
                     _current = player;
-                    _current.Tell(new MessageGameStatusUpdate(message.Token, _gameToken, GameStatus.Created, Self), Self);
+                    _current.Tell(new Message.GameStatusUpdate(message.Token, _gameToken, GameStatus.Created, Self), Self);
                 }
                 else
                 {
                     _opponent = player;
-                    _opponent.Tell(new MessageGameStatusUpdate(message.Token, _gameToken, GameStatus.PlayerJoined, Self), Self);
+                    _opponent.Tell(new Message.GameStatusUpdate(message.Token, _gameToken, GameStatus.PlayerJoined, Self), Self);
 
-                    _current.Tell(new MessageGiveMeYourPositions(_current.Player.Token, _gameToken, TablesAndShips.Ships), Self);
-                    _opponent.Tell(new MessageGiveMeYourPositions(_opponent.Player.Token, _gameToken, TablesAndShips.Ships), Self);
+                    _current.Tell(new Message.GiveMeYourPositions(_current.Player.Token, _gameToken, TablesAndShips.Ships), Self);
+                    _opponent.Tell(new Message.GiveMeYourPositions(_opponent.Player.Token, _gameToken, TablesAndShips.Ships), Self);
                     Become(WaitingForPositions);
                 }
             });
@@ -72,7 +72,7 @@ namespace Actors.CSharp
 
         private void WaitingForPositions()
         {
-            Receive<MessagePlayerPositions>(IsForMe, message =>
+            Receive<Message.PlayerPositions>(IsForMe, message =>
             {
                 var player = GetPlayer(message.Token);
                 var otherPlayer = GetOtherPlayer(message.Token);
@@ -83,8 +83,8 @@ namespace Actors.CSharp
                 if (player.IsInitialized && otherPlayer.IsInitialized)
                 {
                     // First player that provided the ships will start the game
-                    otherPlayer.Tell(new MessageGameStatusUpdate(otherPlayer.Player.Token, _gameToken, GameStatus.GameStartedYouStart, Self), Self);
-                    player.Tell(new MessageGameStatusUpdate(player.Player.Token, _gameToken, GameStatus.GameStartedOpponentStarts, Self), Self);
+                    otherPlayer.Tell(new Message.GameStatusUpdate(otherPlayer.Player.Token, _gameToken, GameStatus.GameStartedYouStart, Self), Self);
+                    player.Tell(new Message.GameStatusUpdate(player.Player.Token, _gameToken, GameStatus.GameStartedOpponentStarts, Self), Self);
                     if (otherPlayer.Player.Token != _current.Player.Token)
                     {
                         SwithSides();
@@ -105,7 +105,7 @@ namespace Actors.CSharp
         {
             #region Player message
 
-            Receive<MessageMissile>(message => IsForMe(message) && message.Token == _current.Player.Token, message => // _current.Player.Actor |> _opponent.Table
+            Receive<Message.Missile>(message => IsForMe(message) && message.Token == _current.Player.Token, message => // _current.Player.Actor |> _opponent.Table
             {
                 _opponent.Table.Tell(message, Self);
             });
@@ -116,36 +116,36 @@ namespace Actors.CSharp
 
             Receive<Point[]>(message => // _opponent.Table |> _opponent.Player.Actor
             {
-                _opponent.Tell(new MessageTable(_opponent.Player.Token, _gameToken, message), Self);
+                _opponent.Tell(new Message.GameTable(_opponent.Player.Token, _gameToken, message), Self);
             });
 
-            Receive<MessageMissileWasAHit>(IsForMe, message =>
+            Receive<Message.MissileWasAHit>(IsForMe, message =>
             {
                 string postfix = message.ShipDestroyed ? " The ship was destroyed!" : "";
-                _current.Tell(new MessageGameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Missile was a hit at " + message.Point + "." + postfix), Self);
-                _opponent.Tell(new MessageGameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.None, Self, "Opponents missile was a hit at " + message.Point + "." + postfix), Self);
+                _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Missile was a hit at " + message.Point + "." + postfix), Self);
+                _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.None, Self, "Opponents missile was a hit at " + message.Point + "." + postfix), Self);
             });
 
-            Receive<MessageMissileDidNotHitShip>(IsForMe, message =>
+            Receive<Message.MissileDidNotHitShip>(IsForMe, message =>
             {
-                _opponent.Tell(new MessageGameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponents missile did not hit at " + message.Point), Self);
-                _current.Tell(new MessageGameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.None, Self, "Your missile did not hit at " + message.Point), Self);
+                _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponents missile did not hit at " + message.Point), Self);
+                _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.None, Self, "Your missile did not hit at " + message.Point), Self);
                 SwithSides();
             });
 
-            Receive<MessageGameOver>(IsForMe, message =>
+            Receive<Message.GameOver>(IsForMe, message =>
             {
-                _opponent.Tell(new MessageGameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.YouLost, Self), Self);
-                _current.Tell(new MessageGameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.YouWon, Self), Self);
-                Context.Parent.Tell(new MessagePlayersFree(_gameToken, _current.Player.Token, _opponent.Player.Token), Self);
+                _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.YouLost, Self), Self);
+                _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.YouWon, Self), Self);
+                Context.Parent.Tell(new Message.PlayersFree(_gameToken, _current.Player.Token, _opponent.Player.Token), Self);
                 Become(GameOver);
             });
 
-            Receive<MessageAlreadyHit>(IsForMe, message =>
+            Receive<Message.AlreadyHit>(IsForMe, message =>
             {
                 var error = "Opponent used the same point again at " + message.Point;
-                _opponent.Tell(new MessageGameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.ItIsYourTurn, Self, error), Self);
-                _current.Tell(new MessageMissileAlreadyHit(_current.Player.Token, _gameToken, message.Point), Self);
+                _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.ItIsYourTurn, Self, error), Self);
+                _current.Tell(new Message.MissileAlreadyHit(_current.Player.Token, _gameToken, message.Point), Self);
                 SwithSides();
             });
 
@@ -183,7 +183,7 @@ namespace Actors.CSharp
             return _current.Player.Token == token ? _opponent : _current;
         }
 
-        private bool IsForMe(GameMessageWithToken message)
+        private bool IsForMe(Message.GameMessageWithToken message)
         {
             if (message.GameToken == _gameToken)
             {

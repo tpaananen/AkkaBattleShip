@@ -10,7 +10,7 @@ namespace BattleShipConsole
 
         public ConsoleGuardianActor()
         {
-            Receive<MessageCreatePlayer>(message =>
+            Receive<Message.CreatePlayer>(message =>
             {
                 Context.ActorOf(message.Props, (++_counter).ToString());
             });

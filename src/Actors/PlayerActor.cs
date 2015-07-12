@@ -37,10 +37,10 @@ namespace Actors.CSharp
         {
             Receive<string>(message => message == "register", message =>
             {
-                _gameManager.Tell(new MessageRegisterPlayer(_name), Self);
+                _gameManager.Tell(new Message.RegisterPlayer(_name), Self);
             });
 
-            Receive<MessageRegisterPlayerResponse>(message =>
+            Receive<Message.RegisterPlayerResponse>(message =>
             {
                 if (message.IsValid)
                 {
@@ -53,7 +53,7 @@ namespace Actors.CSharp
                 }
             });
 
-            Receive<MessageUnableToCreateGame>(message =>
+            Receive<Message.UnableToCreateGame>(message =>
             {
                 _playerUserInterface.Tell("Unable to create game, " + message.Error, Self);
                 _playerUserInterface.Tell("join", Self);
@@ -67,16 +67,16 @@ namespace Actors.CSharp
             
             Receive<string>(message => message == "join", message =>
             {
-                _gameManager.Tell(new MessageCreateGame(_token), Self);
+                _gameManager.Tell(new Message.CreateGame(_token), Self);
             });
 
-            Receive<MessageGameStatusUpdate>(message => message.Status == GameStatus.Created || message.Status == GameStatus.PlayerJoined, message =>
+            Receive<Message.GameStatusUpdate>(message => message.Status == GameStatus.Created || message.Status == GameStatus.PlayerJoined, message =>
             {
                 _currentGameToken = message.GameToken;
                 _currentGame = message.Game;
             });
 
-            Receive<MessageGiveMeYourPositions>(message =>
+            Receive<Message.GiveMeYourPositions>(message =>
             {
                 if (message.GameToken == _currentGameToken)
                 {
@@ -84,15 +84,15 @@ namespace Actors.CSharp
                 }
             });
 
-            Receive<MessagePlayerPositions>(message =>
+            Receive<Message.PlayerPositions>(message =>
             {
-                _currentGame.Tell(new MessagePlayerPositions(_token, _currentGameToken, message.Ships), Self);
+                _currentGame.Tell(new Message.PlayerPositions(_token, _currentGameToken, message.Ships), Self);
                 Become(WaitingForGameStart);
             });
 
             Receive<string>(message => message == "unregister", message =>
             {
-                _gameManager.Tell(new MessageUnregisterPlayer(_token), Self);
+                _gameManager.Tell(new Message.UnregisterPlayer(_token), Self);
                 ActorSystemContext.System.Shutdown(); // stopping the client
             });
 
@@ -106,11 +106,11 @@ namespace Actors.CSharp
 
         private void WaitingForGameStart()
         {
-            Receive<MessageGameStatusUpdate>(message =>
+            Receive<Message.GameStatusUpdate>(message =>
             {
                 if (message.GameToken != _currentGameToken)
                 {
-                    Log.Debug("Invalid game token in MessageGameStatusUpdate");
+                    Log.Debug("Invalid game token in GameStatusUpdate");
                     return;
                 }
 
@@ -139,12 +139,12 @@ namespace Actors.CSharp
 
         private void GameStarted()
         {
-            Receive<MessageTable>(IsForMe, message =>
+            Receive<Message.GameTable>(IsForMe, message =>
             {
                 _playerUserInterface.Tell(message, Self);
             });
 
-            Receive<MessageGameStatusUpdate>(message => IsForMe(message) && message.Status == GameStatus.ItIsYourTurn, message =>
+            Receive<Message.GameStatusUpdate>(message => IsForMe(message) && message.Status == GameStatus.ItIsYourTurn, message =>
             {
                 if (!string.IsNullOrEmpty(message.Message))
                 {
@@ -153,31 +153,27 @@ namespace Actors.CSharp
                 _playerUserInterface.Tell("coord", Self);
             });
 
-            Receive<MessageGameStatusUpdate>(message => IsForMe(message) && message.Status == GameStatus.None && !string.IsNullOrEmpty(message.Message), message =>
+            Receive<Message.GameStatusUpdate>(message => IsForMe(message) && message.Status == GameStatus.None && !string.IsNullOrEmpty(message.Message), message =>
             {
                 _playerUserInterface.Tell(message.Message, Self);
             });
 
-            Receive<MessageAlreadyHit>(IsForMe, message =>
+            Receive<Message.AlreadyHit>(IsForMe, message =>
             {
                 _playerUserInterface.Tell("The point was already used, sorry!", Self);
             });
 
             Receive<Point>(point =>
             {
-                _currentGame.Tell(new MessageMissile(_token, _currentGameToken, point), Self);
+                _currentGame.Tell(new Message.Missile(_token, _currentGameToken, point), Self);
             });
 
-            Receive<MessageGameStatusUpdate>(message => message.Token == _token && message.Status == GameStatus.YouWon || message.Status == GameStatus.YouLost, message =>
+            Receive<Message.GameStatusUpdate>(message => IsForMe(message) && 
+                (message.Status == GameStatus.YouWon || 
+                 message.Status == GameStatus.YouLost), 
+            message =>
             {
-                if (message.Status == GameStatus.YouWon)
-                {
-                    _playerUserInterface.Tell("You won!", Self);
-                }
-                else
-                {
-                    _playerUserInterface.Tell("You lost!", Self);
-                }
+                _playerUserInterface.Tell(message.Status == GameStatus.YouWon ? "You won!" : "You lost!", Self);
                 // Do something
                 _currentGameToken = Guid.Empty;
                 _currentGame = null;
@@ -190,7 +186,7 @@ namespace Actors.CSharp
             });
         }
 
-        private bool IsForMe(GameMessageWithToken message)
+        private bool IsForMe(Message.GameMessageWithToken message)
         {
             return message.Token == _token && message.GameToken == _currentGameToken;
         }
