@@ -43,7 +43,7 @@ namespace Actors.CSharp
                 _players.Remove(Sender);
                 if (message.GameToken != Guid.Empty)
                 {
-                    _gameFactory.Tell(new Message.StopGame(message.GameToken));
+                    _gameFactory.Tell(new Message.StopGame(message.Token, message.GameToken));
                 }
             });
 

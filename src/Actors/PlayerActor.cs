@@ -102,6 +102,12 @@ namespace Actors.CSharp
                 _playerUserInterface.Tell(message.Message, Self);
             });
 
+            Receive<Message.GameStatusUpdate>(message => message.Status == GameStatus.YouLost, message =>
+            {
+                _playerUserInterface.Tell(message.Message, Self);
+                Become(InLobby);
+            });
+
             Receive<Message.GiveMeYourPositions>(message =>
             {
                 if (message.GameToken == _currentGameToken)
@@ -199,7 +205,14 @@ namespace Actors.CSharp
                  message.Status == GameStatus.YouLost), 
             message =>
             {
-                _playerUserInterface.Tell(message.Status == GameStatus.YouWon ? "You won!" : "You lost!", Self);
+                if (!string.IsNullOrEmpty(message.Message))
+                {
+                    _playerUserInterface.Tell(message.Status == GameStatus.YouWon ? "You won!" : "You lost!", Self);
+                }
+                else
+                {
+                    _playerUserInterface.Tell(message.Message, Self);
+                }
                 _currentGameToken = Guid.Empty;
                 _currentGame = null;
                 Become(InLobby);

@@ -55,7 +55,7 @@ namespace Actors.CSharp
 
             Receive<Message.StopGame>(message =>
             {
-                Context.ActorSelection(message.Token.ToString()).Tell(message, Self);
+                Context.ActorSelection(message.GameToken.ToString()).Tell(message, Self);
             });
         }
 

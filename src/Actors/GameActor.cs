@@ -65,9 +65,9 @@ namespace Actors.CSharp
                 }
             });
 
-            Receive<Message.StopGame>(message => message.Token == _gameToken, message =>
+            Receive<Message.StopGame>(IsForMe, message =>
             {
-                HandleStopGame(true);
+                HandleStopGame(message.Token);
             });
 
             ReceiveAny(message =>
@@ -99,9 +99,9 @@ namespace Actors.CSharp
                 }
             });
 
-            Receive<Message.StopGame>(message => message.Token == _gameToken, message =>
+            Receive<Message.StopGame>(IsForMe, message =>
             {
-                HandleStopGame(true);
+                HandleStopGame(message.Token);
             });
 
             ReceiveAny(message =>
@@ -160,9 +160,9 @@ namespace Actors.CSharp
 
             #endregion
 
-            Receive<Message.StopGame>(message => message.Token == _gameToken, message =>
+            Receive<Message.StopGame>(IsForMe, message =>
             {
-                HandleStopGame(true);
+                HandleStopGame(message.Token);
             });
 
             ReceiveAny(message =>
@@ -174,21 +174,28 @@ namespace Actors.CSharp
         private void GameOver()
         {
             GameLog("Game over for " + _gameToken);
-            HandleStopGame(false);
+            HandleStopGame(Guid.Empty);
             ReceiveAny(message =>
             {
                 GameLog("Unhandled message of type " + message.GetType() + " received in GameOver state...");
             });
         }
 
-        private void HandleStopGame(bool noWinner)
+        private void HandleStopGame(Guid userTokenWhoRequestedStopping)
         {
-            if (noWinner)
+            var userRequested = userTokenWhoRequestedStopping != Guid.Empty;
+            if (userRequested)
             {
-                GameLog("Game forced to stop...");
+                const string message = "Game forced to stop";
+                GameLog(message);
+                var player = GetOtherPlayer(userTokenWhoRequestedStopping);
+                player.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.YouLost, Self, message), Self);
             }
-            _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.YouLost, Self), Self);
-            _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, noWinner ? GameStatus.YouLost : GameStatus.YouWon, Self), Self);
+            else
+            {
+                _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.YouLost, Self), Self);
+                _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.YouWon, Self), Self);
+            }
             Context.Parent.Tell(new Message.PlayersFree(_gameToken, _current.Player.Token, _opponent.Player.Token), Self);
         }
 
