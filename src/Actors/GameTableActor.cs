@@ -10,7 +10,7 @@ namespace Actors.CSharp
     public class GameTableActor : BattleShipActor
     {
         private readonly List<Ship> _ships; 
-        private readonly Dictionary<Point, IActorRef> _pointActors = new Dictionary<Point, IActorRef>(); 
+        private readonly Dictionary<Point, IActorRef> _pointActors = new Dictionary<Point, IActorRef>(100); 
         private readonly List<Point> _currentPoints = new List<Point>(100);
         private readonly Guid _gameToken;
 
@@ -91,14 +91,12 @@ namespace Actors.CSharp
 
         private void ReplacePoint(Message.WithPoint message)
         {
-            _currentPoints.Remove(message.Point);
-            _currentPoints.Add(message.Point);
-            _currentPoints.Sort();
+            _currentPoints[_currentPoints.IndexOf(message.Point)] = message.Point;
         }
 
-        private Point[] ConstructTableStatusMessage()
+        private IReadOnlyList<Point> ConstructTableStatusMessage()
         {
-            return _currentPoints.ToArray();
+            return _currentPoints;
         }
 
         private void IntializeTable(IEnumerable<Ship> ships)
@@ -120,11 +118,12 @@ namespace Actors.CSharp
                     var point = new Point(x, y, false, false);
                     if (!_pointActors.ContainsKey(point))
                     {
-                        _pointActors.Add(point, Context.ActorOf(Props.Create(() => new PointActor(point, _gameToken)), string.Format("{0}:{1}", point.Y, point.X)));
+                        _pointActors.Add(point, Context.ActorOf(Props.Create(() => new PointActor(point, _gameToken))));
                         _currentPoints.Add(point);
                     }
                 }
             }
+            _currentPoints.Sort();
         }
     }
 }

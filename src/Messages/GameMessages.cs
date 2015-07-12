@@ -110,9 +110,9 @@ namespace Messages.CSharp
 
         public class GameTable : GameMessage
         {
-            public Point[] Points { get; private set; }
+            public IReadOnlyList<Point> Points { get; private set; }
 
-            public GameTable(Guid token, Guid gameToken, Point[] points)
+            public GameTable(Guid token, Guid gameToken, IReadOnlyList<Point> points)
                 : base(token, gameToken)
             {
                 Points = points;

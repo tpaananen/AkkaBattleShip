@@ -35,7 +35,8 @@ namespace Actors.CSharp
         {
             Receive<Message.Missile>(message =>
             {
-                Context.Parent.Tell(new Message.AlreadyHit(Guid.Empty, _gameToken, message.Point), Self);
+                var point = PointHasHit(message.Point);
+                Context.Parent.Tell(new Message.AlreadyHit(Guid.Empty, _gameToken, point), Self);
             });
 
             ReceiveAny(message =>

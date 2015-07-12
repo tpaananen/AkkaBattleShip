@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using Messages.CSharp.Pieces;
 
 namespace BattleShipConsole
 {
     public class TableWriter : ConsoleTeller
     {
-        public void ShowTable(Point[] points)
+        public void ShowTable(IReadOnlyList<Point> points)
         {
             Tell("Battleships:");
             WriteHorizontalCharacterRow();

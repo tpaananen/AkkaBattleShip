@@ -171,7 +171,7 @@ namespace Actors.CSharp
                 _playerUserInterface.Tell(message.Message, Self);
             });
 
-            Receive<Message.AlreadyHit>(IsForMe, message =>
+            Receive<Message.MissileAlreadyHit>(IsForMe, message =>
             {
                 _playerUserInterface.Tell("The point was already used, sorry!", Self);
             });
