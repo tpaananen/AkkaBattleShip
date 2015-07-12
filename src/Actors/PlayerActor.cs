@@ -186,7 +186,7 @@ namespace Actors.CSharp
             });
         }
 
-        private bool IsForMe(Message.GameMessageWithToken message)
+        private bool IsForMe(Message.GameMessage message)
         {
             return message.Token == _token && message.GameToken == _currentGameToken;
         }

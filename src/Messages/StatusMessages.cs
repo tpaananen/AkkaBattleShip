@@ -7,7 +7,7 @@ namespace Messages.CSharp
     public partial class Message
     {
 
-        public abstract class WithPoint : GameMessageWithToken
+        public abstract class WithPoint : GameMessage
         {
             public Point Point { get; private set; }
 
@@ -47,7 +47,7 @@ namespace Messages.CSharp
             }
         }
 
-        public class GameOver : GameMessageWithToken
+        public class GameOver : GameMessage
         {
             public GameOver(Guid token, Guid gameToken) : base(token, gameToken)
             {

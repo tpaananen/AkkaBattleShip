@@ -183,7 +183,7 @@ namespace Actors.CSharp
             return _current.Player.Token == token ? _opponent : _current;
         }
 
-        private bool IsForMe(Message.GameMessageWithToken message)
+        private bool IsForMe(Message.GameMessage message)
         {
             if (message.GameToken == _gameToken)
             {

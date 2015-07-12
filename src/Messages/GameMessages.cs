@@ -37,7 +37,7 @@ namespace Messages.CSharp
             }
         }
 
-        public class GameStatusUpdate : GameMessageWithToken
+        public class GameStatusUpdate : GameMessage
         {
             public IActorRef Game { get; private set; }
 
@@ -54,7 +54,7 @@ namespace Messages.CSharp
             }
         }
 
-        public class PlayerJoining : GameMessageWithToken
+        public class PlayerJoining : GameMessage
         {
             public ActorInfoContainer Player { get; private set; }
 
@@ -65,17 +65,17 @@ namespace Messages.CSharp
             }
         }
 
-        public abstract class GameMessageWithToken : WithToken
+        public abstract class GameMessage : WithToken
         {
             public Guid GameToken { get; private set; }
 
-            protected GameMessageWithToken(Guid token, Guid gameToken) : base(token)
+            protected GameMessage(Guid token, Guid gameToken) : base(token)
             {
                 GameToken = gameToken;
             }
         }
 
-        public class PlayerPositions : GameMessageWithToken
+        public class PlayerPositions : GameMessage
         {
             public IReadOnlyList<Ship> Ships { get; private set; }
 
@@ -86,7 +86,7 @@ namespace Messages.CSharp
             }
         }
 
-        public class GiveMeYourPositions : GameMessageWithToken
+        public class GiveMeYourPositions : GameMessage
         {
             public IReadOnlyCollection<Tuple<string, int>> Ships { get; private set; }
 
@@ -97,7 +97,7 @@ namespace Messages.CSharp
             }
         }
 
-        public class Missile : GameMessageWithToken
+        public class Missile : GameMessage
         {
             public Point Point { get; private set; }
 
@@ -108,7 +108,7 @@ namespace Messages.CSharp
             }
         }
 
-        public class GameTable : GameMessageWithToken
+        public class GameTable : GameMessage
         {
             public Point[] Points { get; private set; }
 
@@ -119,7 +119,7 @@ namespace Messages.CSharp
             }
         }
 
-        public class MissileAlreadyHit : GameMessageWithToken
+        public class MissileAlreadyHit : GameMessage
         {
             public Point Point { get; private set; }
 
