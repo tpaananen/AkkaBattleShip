@@ -18,9 +18,22 @@ namespace Actors.CSharp
             GameManager = System.ActorOf(Props.Create<GameManagerActor>(), "gameManager");
         }
 
+        /// <summary>
+        /// Retrieves game manager path from the config and returns an actor selection.
+        /// </summary>
+        /// <returns></returns>
         public static ActorSelection VirtualManager()
         {
-            return System.ActorSelection("akka.tcp://BattleShip@127.0.0.1:8080/user/gameManager");
+            var path = CreateActorPathFromConfig("/user/gameManager");
+            var actorPath = ActorPath.Parse(path);
+            return System.ActorSelection(actorPath);
+        }
+
+        private static string CreateActorPathFromConfig(string path)
+        {
+            var remotePath = ConfigurationFactory.Load()
+                    .GetString("akka.remote.deployment." + path + ".remote");
+            return remotePath + path;
         }
     }
 }

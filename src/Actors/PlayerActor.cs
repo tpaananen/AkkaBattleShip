@@ -17,10 +17,13 @@ namespace Actors.CSharp
 
         private readonly string _name;
 
+        private readonly ICanTell _gameManager;
+
         public PlayerActor(string name, Props propsForUserInteracting)
         {
             _name = name;
             _playerUserInterface = Context.ActorOf(propsForUserInteracting, "ui");
+            _gameManager = ActorSystemContext.VirtualManager();
             Become(Unregistered);
         }
 
@@ -34,7 +37,7 @@ namespace Actors.CSharp
         {
             Receive<string>(message => message == "register", message =>
             {
-                ActorSystemContext.VirtualManager().Tell(new MessageRegisterPlayer(_name), Self);
+                _gameManager.Tell(new MessageRegisterPlayer(_name), Self);
             });
 
             Receive<MessageRegisterPlayerResponse>(message =>
@@ -52,7 +55,8 @@ namespace Actors.CSharp
 
             Receive<MessageUnableToCreateGame>(message =>
             {
-
+                _playerUserInterface.Tell("Unable to create game, " + message.Error, Self);
+                _playerUserInterface.Tell("join", Self);
             });
         }
 
@@ -63,7 +67,7 @@ namespace Actors.CSharp
             
             Receive<string>(message => message == "join", message =>
             {
-                ActorSystemContext.VirtualManager().Tell(new MessageCreateGame(_token), Self);
+                _gameManager.Tell(new MessageCreateGame(_token), Self);
             });
 
             Receive<MessageGameStatusUpdate>(message => message.Status == GameStatus.Created || message.Status == GameStatus.PlayerJoined, message =>
@@ -88,7 +92,7 @@ namespace Actors.CSharp
 
             Receive<string>(message => message == "unregister", message =>
             {
-                ActorSystemContext.VirtualManager().Tell(new MessageUnregisterPlayer(_token));
+                _gameManager.Tell(new MessageUnregisterPlayer(_token), Self);
                 ActorSystemContext.System.Shutdown(); // stopping the client
             });
 
