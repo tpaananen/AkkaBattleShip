@@ -1,10 +1,9 @@
 ﻿using System;
-using Akka.Actor;
 using Messages.CSharp.Pieces;
 
 namespace Messages.CSharp
 {
-    public partial class Message
+    public abstract partial class Message
     {
 
         public abstract class WithPoint : GameMessage

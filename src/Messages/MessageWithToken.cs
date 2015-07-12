@@ -2,7 +2,7 @@
 
 namespace Messages.CSharp
 {
-    public partial class Message
+    public abstract partial class Message
     {
         public abstract class WithToken
         {

@@ -56,7 +56,8 @@ namespace Actors.CSharp
                 else
                 {
                     _opponent = player;
-                    _opponent.Tell(new Message.GameStatusUpdate(message.Token, _gameToken, GameStatus.PlayerJoined, Self), Self);
+                    _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.Created, Self, "Your opponent is " + _current.Player.Name), Self);
+                    _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.PlayerJoined, Self, "Your opponent is " + _opponent.Player.Name), Self);
 
                     _current.Tell(new Message.GiveMeYourPositions(_current.Player.Token, _gameToken, TablesAndShips.Ships), Self);
                     _opponent.Tell(new Message.GiveMeYourPositions(_opponent.Player.Token, _gameToken, TablesAndShips.Ships), Self);
@@ -72,7 +73,7 @@ namespace Actors.CSharp
 
         private void WaitingForPositions()
         {
-            Receive<Message.PlayerPositions>(IsForMe, message =>
+            Receive<Message.ShipPositions>(IsForMe, message =>
             {
                 var player = GetPlayer(message.Token);
                 var otherPlayer = GetOtherPlayer(message.Token);

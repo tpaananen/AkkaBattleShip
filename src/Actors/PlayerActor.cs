@@ -70,10 +70,23 @@ namespace Actors.CSharp
                 _gameManager.Tell(new Message.CreateGame(_token), Self);
             });
 
-            Receive<Message.GameStatusUpdate>(message => message.Status == GameStatus.Created || message.Status == GameStatus.PlayerJoined, message =>
+            Receive<Message.GameStatusUpdate>(message => message.Status == GameStatus.Created, message =>
             {
                 _currentGameToken = message.GameToken;
                 _currentGame = message.Game;
+                if (!string.IsNullOrEmpty(message.Message))
+                {
+                    _playerUserInterface.Tell(message.Message, Self);
+                }
+                else
+                {
+                    _playerUserInterface.Tell("Game created with token " + message.GameToken, Self);
+                }
+            });
+
+            Receive<Message.GameStatusUpdate>(message => message.Status == GameStatus.PlayerJoined, message =>
+            {
+                _playerUserInterface.Tell(message.Message, Self);
             });
 
             Receive<Message.GiveMeYourPositions>(message =>
@@ -84,9 +97,9 @@ namespace Actors.CSharp
                 }
             });
 
-            Receive<Message.PlayerPositions>(message =>
+            Receive<Message.ShipPositions>(message =>
             {
-                _currentGame.Tell(new Message.PlayerPositions(_token, _currentGameToken, message.Ships), Self);
+                _currentGame.Tell(new Message.ShipPositions(_token, _currentGameToken, message.Ships), Self);
                 Become(WaitingForGameStart);
             });
 

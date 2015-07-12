@@ -10,7 +10,7 @@ namespace BattleShipConsole
 {
     public class ConsoleActor : BattleShipActor
     {
-        private Stack<Tuple<string, int>> _stack = new Stack<Tuple<string, int>>();
+        private Stack<Tuple<string, int>> _stack;
         private List<Ship> _selectedShips;
 
         public ConsoleActor()
@@ -119,7 +119,7 @@ namespace BattleShipConsole
 
             Receive<string>(message => message == "get" && _stack.Count == 0, message =>
             {
-                Context.Parent.Tell(new Message.PlayerPositions(Guid.Empty, Guid.Empty, _selectedShips), Self);
+                Context.Parent.Tell(new Message.ShipPositions(Guid.Empty, Guid.Empty, _selectedShips), Self);
                 Become(Idle);
             });
 

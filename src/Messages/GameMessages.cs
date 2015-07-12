@@ -6,7 +6,7 @@ using Messages.CSharp.Pieces;
 
 namespace Messages.CSharp
 {
-    public partial class Message
+    public abstract partial class Message
     {
 
         public class CreateGame : WithToken
@@ -75,11 +75,11 @@ namespace Messages.CSharp
             }
         }
 
-        public class PlayerPositions : GameMessage
+        public class ShipPositions : GameMessage
         {
             public IReadOnlyList<Ship> Ships { get; private set; }
 
-            public PlayerPositions(Guid token, Guid gameToken, IReadOnlyList<Ship> ships)
+            public ShipPositions(Guid token, Guid gameToken, IReadOnlyList<Ship> ships)
                 : base(token, gameToken)
             {
                 Ships = ships;
