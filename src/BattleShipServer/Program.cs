@@ -9,8 +9,7 @@ namespace BattleShipServer
         {
             // Server
             var config = ConfigurationFactory.Load();
-            ActorSystemContext.CreateActorSystemContext(config);
-            using (var system = ActorSystemContext.System)
+            using (var system = ActorSystemContext.CreateActorSystemContext(config))
             {
                 ActorSystemContext.CreateManager();
                 system.AwaitTermination();

@@ -12,8 +12,7 @@ namespace BattleShipConsole
         {
             // Client
             var config = ConfigurationFactory.Load();
-            ActorSystemContext.CreateActorSystemContext(config);
-            using (var system = ActorSystemContext.System)
+            using (var system = ActorSystemContext.CreateActorSystemContext(config))
             {
                 var consoleGuardian = system.ActorOf(Props.Create(() => new ConsoleGuardianActor()), "playerguardian");
 

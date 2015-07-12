@@ -8,9 +8,9 @@ namespace Actors.CSharp
         public static ActorSystem System { get; private set; }
         private static IActorRef GameManager { get; set; }
 
-        public static void CreateActorSystemContext(Config config)
+        public static ActorSystem CreateActorSystemContext(Config config)
         {
-            System = ActorSystem.Create("BattleShip", config); // TODO: config
+            return (System = ActorSystem.Create("BattleShip", config));
         }
 
         public static void CreateManager()
@@ -20,7 +20,7 @@ namespace Actors.CSharp
 
         public static ActorSelection VirtualManager()
         {
-            return System.ActorSelection("akka.tcp://BattleShip@localhost:8080/user/gameManager");
+            return System.ActorSelection("akka.tcp://BattleShip@127.0.0.1:8080/user/gameManager");
         }
     }
 }
