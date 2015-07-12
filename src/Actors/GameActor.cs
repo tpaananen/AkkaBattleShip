@@ -67,7 +67,7 @@ namespace Actors.CSharp
 
             ReceiveAny(message =>
             {
-                GameLog("Unhandled message of type " + message.GetType() + " received in intial state...");
+                GameLog("Unhandled points of type " + message.GetType() + " received in intial state...");
             });
         }
 
@@ -96,7 +96,7 @@ namespace Actors.CSharp
 
             ReceiveAny(message =>
             {
-                GameLog("Unhandled message of type " + message.GetType() + " received in WaitingForPositions state...");
+                GameLog("Unhandled points of type " + message.GetType() + " received in WaitingForPositions state...");
             });
         }
 
@@ -104,7 +104,7 @@ namespace Actors.CSharp
 
         private void GameOn()
         {
-            #region Player message
+            #region Player points
 
             Receive<Message.Missile>(message => IsForMe(message) && message.Token == _current.Player.Token, message => // _current.Player.Actor |> _opponent.Table
             {
@@ -115,9 +115,10 @@ namespace Actors.CSharp
 
             #region Table responses
 
-            Receive<Point[]>(message => // _opponent.Table |> _opponent.Player.Actor
+            Receive<Point[]>(message =>
             {
                 _opponent.Tell(new Message.GameTable(_opponent.Player.Token, _gameToken, message), Self);
+                _current.Tell(new Message.GameTable(_current.Player.Token, _gameToken, RemoveShipInfo(message)), Self);
             });
 
             Receive<Message.MissileWasAHit>(IsForMe, message =>
@@ -154,7 +155,7 @@ namespace Actors.CSharp
 
             ReceiveAny(message =>
             {
-                GameLog("Unhandled message of type " + message.GetType() + " received in PlayerOne state...");
+                GameLog("Unhandled points of type " + message.GetType() + " received in PlayerOne state...");
             });
         }
 
@@ -163,7 +164,7 @@ namespace Actors.CSharp
             GameLog("Game over for " + _gameToken);
             ReceiveAny(message =>
             {
-                GameLog("Unhandled message of type " + message.GetType() + " received in GameOver state...");
+                GameLog("Unhandled points of type " + message.GetType() + " received in GameOver state...");
             });
         }
 
@@ -197,6 +198,24 @@ namespace Actors.CSharp
         private void GameLog(string message)
         {
             Log.Info("Game " + _gameToken + ": " + message);
+        }
+
+        private static Point[] RemoveShipInfo(IReadOnlyList<Point> points)
+        {
+            var array = new Point[points.Count];
+            for (var i = 0; i < points.Count; ++i)
+            {
+                var point = points[i];
+                if (point.HasShip)
+                {
+                    array[i] = new Point(point.X, point.Y, false, point.HasHit);
+                }
+                else
+                {
+                    array[i] = point;
+                }
+            }
+            return array;
         }
     }
 }

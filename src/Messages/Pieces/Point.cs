@@ -2,19 +2,41 @@
 
 namespace Messages.CSharp.Pieces
 {
-    public sealed class Point : IEquatable<Point>, IComparable<Point>
+    public struct Point : IEquatable<Point>, IComparable<Point>
     {
-        public byte X { get; private set; }
+        public const char A = 'A';
+        public const char J = 'J';
+        public char X { get; private set; }
         public byte Y { get; private set; }
         public bool HasShip { get; private set; }
         public bool HasHit { get; private set; }
 
-        public Point(byte x, byte y, bool hasShip = false, bool hasHit = false)
+        public Point(char x, byte y, bool hasShip, bool hasHit)
         {
+            RequireXPositionInRange(x, "x");
+            RequireYPositionInRange(y, "y");
             X = x;
             Y = y;
             HasShip = hasShip;
             HasHit = hasHit;
+        }
+
+        // ReSharper disable once UnusedParameter.Local
+        private static void RequireYPositionInRange(byte value, string name)
+        {
+            if (value < 1 || value > 10)
+            {
+                throw new ArgumentOutOfRangeException(name);
+            }
+        }
+
+        // ReSharper disable once UnusedParameter.Local
+        private static void RequireXPositionInRange(char value, string name)
+        {
+            if (value < A || value > J)
+            {
+                throw new ArgumentOutOfRangeException(name);
+            }
         }
 
         public decimal DistanceTo(Point other)
@@ -24,24 +46,17 @@ namespace Messages.CSharp.Pieces
 
         public int CompareTo(Point other)
         {
-            if (other.Y < Y)
-            {
-                return 1;
-            }
-            return X.CompareTo(other.X);
+            return Y == other.Y ? X.CompareTo(other.X) : Y.CompareTo(other.Y);
         }
 
         public bool Equals(Point other)
         {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
             return X == other.X && Y == other.Y;
         }
 
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
             return obj is Point && Equals((Point) obj);
         }
 
@@ -65,12 +80,12 @@ namespace Messages.CSharp.Pieces
 
         public override string ToString()
         {
-            return string.Format("{0}:{1}", X, Y);
+            return string.Format("[{0}:{1}], Ship: {2}, Hit: {3}", X, Y, HasShip, HasHit);
         }
 
         public static decimal operator -(Point left, Point right)
         {
-            return (decimal)Math.Sqrt(Math.Pow(left.X - right.X, 2) + Math.Pow(left.Y - right.Y, 2));
+            return (decimal)Math.Sqrt(Math.Pow((left.X - A) - (right.X - A), 2) + Math.Pow(left.Y - right.Y, 2));
         }
 
     }

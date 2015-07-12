@@ -17,7 +17,7 @@ namespace Actors.CSharp
             Receive<Message.Missile>(message => message.Point == _point, message =>
             {
                 PointHasHit();
-                Context.Parent.Tell(new Message.MissileDidNotHitShip(Guid.Empty, _gameToken, message.Point), Self);
+                Context.Parent.Tell(new Message.MissileDidNotHitShip(Guid.Empty, _gameToken, _point), Self);
                 Become(Destroyed);
             });
         }
@@ -32,7 +32,7 @@ namespace Actors.CSharp
 
         private void PointHasHit()
         {
-            _point = new Point(_point.X, _point.Y, _point.HasShip, true);
+            _point = new Point(_point.X, _point.Y, false, true);
         }
     }
 }

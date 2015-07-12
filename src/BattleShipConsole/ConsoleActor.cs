@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Actors.CSharp;
 using Akka.Actor;
 using Messages.CSharp;
@@ -10,6 +9,8 @@ namespace BattleShipConsole
 {
     public class ConsoleActor : BattleShipActor
     {
+        private readonly TableWriter _tableWriter = new TableWriter();
+        private readonly PointReader _pointReader = new PointReader();
         private Stack<Tuple<string, int>> _stack;
         private List<Ship> _selectedShips;
 
@@ -32,7 +33,7 @@ namespace BattleShipConsole
                 Tell("Your turn, give the next position to hit (format: A10) : ");
                 var position = Read();
                 Point point;
-                if (!ParsePoint(position, out point))
+                if (!_pointReader.ParsePoint(position, out point))
                 {
                     Self.Tell("coord");
                     return;
@@ -61,40 +62,7 @@ namespace BattleShipConsole
 
             Receive<Message.GameTable>(message =>
             {
-                Tell("Battleships:");
-                Console.Write("  ");
-                for (int i = 65; i < 75; ++i)
-                {
-                    Console.Write((char)i);
-                }
-                Tell("");
-
-                var points = message.Points;
-                for (int i = 0; i < 10; ++i)
-                {
-                    Console.Write((i + 1).ToString().PadLeft(2, ' '));
-                    for (int j = 0; j < 10; ++j)
-                    {
-                        var index = i * 10 + j;
-                        var point = points[index];
-
-                        if (point.HasShip && !point.HasHit)
-                        {
-                            Console.BackgroundColor = ConsoleColor.Gray;
-                        }
-                        else if (point.HasShip && point.HasHit)
-                        {
-                            Console.BackgroundColor = ConsoleColor.DarkMagenta;
-                        }
-                        else
-                        {
-                            Console.ResetColor();
-                        }
-                        Console.Write(point.HasHit ? "X" : " ");
-                    }
-                    Tell("");
-                }
-                Console.ResetColor();
+                _tableWriter.ShowTable(message.Points);
             });
 
             Receive<string>(message =>
@@ -110,7 +78,7 @@ namespace BattleShipConsole
                 var item = _stack.Pop();
                 Tell("Give coordinates for " + item.Item1 + " (len: " + item.Item2 + ": ");
                 var coords = Read();
-                if (!PushCoords(coords, item.Item2))
+                if (!_pointReader.CreateShip(coords, item.Item2, _selectedShips))
                 {
                     _stack.Push(item);
                 }
@@ -127,105 +95,10 @@ namespace BattleShipConsole
             Self.Tell("get");
         }
 
-        private bool PushCoords(string coords, int len)
+        protected override void PreRestart(Exception reason, object message)
         {
-            var split = coords.Split(new [] { ":" }, StringSplitOptions.RemoveEmptyEntries);
-            if (split.Length != 2)
-            {
-                return false;
-            }
-
-            Point startPoint;
-            if (!ParsePoint(split[0], out startPoint))
-            {
-                return false;
-            }
-
-            Point endPoint;
-            if (!ParsePoint(split[1], out endPoint))
-            {
-                return false;
-            }
-
-            var distance = startPoint.DistanceTo(endPoint);
-            if (distance != len)
-            {
-                Tell("Length of the ship is not " + len + ", but " + distance);
-                return false;
-            }
-
-            return FillAndPushPoints(startPoint, endPoint);
-        }
-
-        private bool FillAndPushPoints(Point startPoint, Point endPoint)
-        {
-            var list = new List<Point> {startPoint};
-            if (startPoint != endPoint)
-            {
-                list.Add(endPoint);
-            }
-            list.Sort();
-
-            if (list.Count > 1)
-            {
-                if (list[0].X == list[1].X)
-                {
-                    // vertical
-                    for (var y = (byte) (list[0].Y + 1); y < list[1].Y; ++y)
-                    {
-                        list.Add(new Point(list[0].X, y, true));
-                    }
-                }
-                else
-                {
-                    // Horiz
-                    for (var x = (byte) (list[0].X + 1); x < list[1].X; ++x)
-                    {
-                        list.Add(new Point(x, list[0].Y, true));
-                    }
-                }
-
-                var points = _selectedShips.SelectMany(x => x.Points);
-                foreach (var point in points)
-                {
-                    if (list.Contains(point))
-                    {
-                        Tell("The point " + point + " already exists, overlapping ships are not allowed.");
-                        return false;
-                    }
-                }
-            }
-
-            var ship = new Ship(list);
-            _selectedShips.Add(ship);
-            return true;
-        }
-
-        private static bool ParsePoint(string start, out Point point)
-        {
-            point = new Point(0, 0);
-            if (start.Length < 2 || start.Length > 3)
-            {
-                Tell("Invalid number of characters in " + start);
-                return false;
-            }
-            var c = (byte) ((byte)start.Substring(0, 1).ToUpper()[0] - (byte)'A' + 1);
-            var n = byte.Parse(start.Substring(1));
-
-            if (c < 1 || c > 10)
-            {
-                Tell("Invalid range in " + start);
-                return false;
-            }
-
-            if (n < 1 || n > 10)
-            {
-                Tell("Invalid range in " + start);
-                return false;
-            }
-
-            point = new Point(c, n);
-            return true;
+            Self.Tell(message);
+            base.PreRestart(reason, message);
         }
 
         private static void Tell(string line)

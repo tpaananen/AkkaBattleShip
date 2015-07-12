@@ -46,7 +46,7 @@ namespace Actors.CSharp
 
         private static Point PointHasHit(Point point)
         {
-            return new Point(point.X, point.Y, point.HasShip, true);
+            return new Point(point.X, point.Y, true, true);
         }
 
     }

@@ -57,6 +57,10 @@
       <Project>{ee65da6c-8ebc-44ce-9eff-d0e193839e7a}</Project>
       <Name>Actors.CSharp</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\BattleShipConsole\BattleShipConsole.csproj">
+      <Project>{3e82192d-3926-4e03-a5c4-8216d09d1151}</Project>
+      <Name>BattleShipConsole</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\src\Messages\Messages.CSharp.csproj">
       <Project>{2bbc2467-2e0c-47b5-8fd3-d0578ccaaf8e}</Project>
       <Name>Messages.CSharp</Name>

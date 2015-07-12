@@ -10,8 +10,8 @@ namespace BattleShipTests
         [Test]
         public void TestPointOrderingYaxis()
         {
-            var point1 = new Point(0, 0);
-            var point2 = new Point(0, 1);
+            var point1 = new Point('A', 1, false, false);
+            var point2 = new Point('A', 2, false, false);
             var list = new List<Point> {point2, point1};
             list.Sort();
             Assert.AreEqual(point1, list[0]);
@@ -21,9 +21,9 @@ namespace BattleShipTests
         [Test]
         public void TestPointOrderingXaxis()
         {
-            var point1 = new Point(0, 1);
-            var point2 = new Point(1, 1);
-            var point3 = new Point(3, 1);
+            var point1 = new Point('A', 1, false, false);
+            var point2 = new Point('B', 1, false, false);
+            var point3 = new Point('C', 1, false, false);
             var list = new List<Point> { point3, point1, point2 };
             list.Sort();
             Assert.AreEqual(point1, list[0]);
@@ -34,12 +34,12 @@ namespace BattleShipTests
         [Test]
         public void TestPointOrderingXAndYaxis()
         {
-            var point1 = new Point(0, 1);
-            var point2 = new Point(1, 1);
-            var point3 = new Point(3, 1);
+            var point1 = new Point('A', 1, false, false);
+            var point2 = new Point('B', 1, false, false);
+            var point3 = new Point('C', 1, false, false);
 
-            var point4 = new Point(2, 2);
-            var point5 = new Point(5, 2);
+            var point4 = new Point('B', 2, false, false);
+            var point5 = new Point('F', 2, false, false);
 
             var list = new List<Point> { point3, point1, point4, point5, point2 };
             list.Sort();
@@ -53,9 +53,25 @@ namespace BattleShipTests
         [Test]
         public void TestPointsAreEqual()
         {
-            var point1 = new Point(4, 6);
-            var point2 = new Point(4, 6);
+            var point1 = new Point('E', 6, false, false);
+            var point2 = new Point('E', 6, true, false);
             Assert.AreEqual(point1, point2);
+        }
+
+        [Test]
+        public void TestShipLength()
+        {
+            var point1 = new Point('E', 6, false, false);
+            var point2 = new Point('E', 6, false, false);
+            Assert.AreEqual(1, point1.DistanceTo(point2));
+
+            point1 = new Point(Point.A, 1, false, false);
+            point2 = new Point(Point.J, 1, false, false);
+            Assert.AreEqual(10, point1.DistanceTo(point2));
+
+            point1 = new Point(Point.A, 1, false, false);
+            point2 = new Point(Point.A, 10, false, false);
+            Assert.AreEqual(10, point1.DistanceTo(point2));
         }
 
     }

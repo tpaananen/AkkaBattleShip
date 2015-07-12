@@ -187,7 +187,6 @@ namespace Actors.CSharp
             message =>
             {
                 _playerUserInterface.Tell(message.Status == GameStatus.YouWon ? "You won!" : "You lost!", Self);
-                // Do something
                 _currentGameToken = Guid.Empty;
                 _currentGame = null;
                 Become(InLobby);
@@ -209,10 +208,6 @@ namespace Actors.CSharp
             return new OneForOneStrategy(10, 10, ex =>
             {
                 Log.Error(ex.ToString());
-                if (ex is FormatException)
-                {
-                    return Directive.Resume;
-                }
                 return Directive.Restart;
             });
         }
