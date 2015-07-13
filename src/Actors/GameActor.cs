@@ -228,9 +228,9 @@ namespace Actors.CSharp
             for (var i = 0; i < points.Count; ++i)
             {
                 var point = points[i];
-                if (point.HasShip)
+                if (point.HasShip && !point.HasHit)
                 {
-                    array[i] = new Point(point.X, point.Y, false, point.HasHit);
+                    array[i] = new Point(point.X, point.Y, false, false);
                 }
                 else
                 {
