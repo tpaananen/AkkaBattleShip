@@ -117,6 +117,11 @@ namespace BattleShipConsole
                 Become(Waiting);
                 Context.Parent.Tell(point, Self);
             });
+
+            Receive<string>(message =>
+            {
+                Tell(message);
+            });
         }
 
         private void HandleStatusMessage(Message.GameStatusUpdate message)

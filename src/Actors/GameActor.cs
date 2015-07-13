@@ -112,6 +112,12 @@ namespace Actors.CSharp
                 }
             });
 
+            Receive<Message.GameTable>(message =>
+            {
+                var player = GetPlayer(message.Token);
+                player.Tell(message, Self);
+            });
+
             Receive<Message.StopGame>(IsForMe, message =>
             {
                 HandleStopGame(message.Token);
@@ -136,10 +142,10 @@ namespace Actors.CSharp
 
             #region Table responses
 
-            Receive<IReadOnlyList<Point>>(message =>
+            Receive<Message.GameTable>(message =>
             {
-                _opponent.Tell(new Message.GameTable(_opponent.Player.Token, _gameToken, message), Self);
-                _current.Tell(new Message.GameTable(_current.Player.Token, _gameToken, RemoveShipInfo(message)), Self);
+                _opponent.Tell(new Message.GameTable(_opponent.Player.Token, _gameToken, message.Points), Self);
+                _current.Tell(new Message.GameTable(_current.Player.Token, _gameToken, RemoveShipInfo(message.Points)), Self);
             });
 
             Receive<Message.MissileWasAHit>(IsForMe, message =>

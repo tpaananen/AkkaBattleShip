@@ -21,6 +21,7 @@ namespace Actors.CSharp
         {
             _playerToken = playerToken;
             _gameToken = gameToken;
+            AddNonShipPoints();
             SendPositionRequestOrBecomeReady(null);
             Become(Configuring);
         }
@@ -33,6 +34,7 @@ namespace Actors.CSharp
                 if (AddToTable(message.Ship, out error))
                 {
                     _shipConfig.Pop();
+                    Context.Parent.Tell(new Message.GameTable(_playerToken, _gameToken, _currentPoints), Self);
                 }
                 SendPositionRequestOrBecomeReady(error);
             });
@@ -40,8 +42,6 @@ namespace Actors.CSharp
 
         private void GameOn()
         {
-            AddNonShipPoints();
-
             Receive<Message.Missile>(message =>
             {
                 IActorRef pointActor;
@@ -95,7 +95,7 @@ namespace Actors.CSharp
         private void ReportTable(Message.WithPoint message)
         {
             ReplacePoint(message);
-            Context.Parent.Tell(_currentPoints as IReadOnlyList<Point>, Self);
+            Context.Parent.Tell(new Message.GameTable(_playerToken, _gameToken, _currentPoints), Self);
         }
 
         private void GameOver()
@@ -117,6 +117,10 @@ namespace Actors.CSharp
             else
             {
                 _shipConfig = null;
+                foreach (var point in _currentPoints.Where(d => !d.HasShip))
+                {
+                    _pointActors.Add(point, Context.ActorOf(Props.Create(() => new PointActor(point, _gameToken))));
+                }
                 Context.Parent.Tell(new Message.GameStatusUpdate(_playerToken, _gameToken, GameStatus.Configured, null), Self);
                 Become(GameOn);
             }
@@ -131,37 +135,58 @@ namespace Actors.CSharp
                 return false;
             }
 
-            if (_currentPoints.Intersect(ship.Points).Any())
+            if (_currentPoints.Where(d => d.HasShip).Intersect(ship.Points).Any())
             {
                 error = "The given ship overlaps with the existing ship.";
                 return false; // point already exists
             }
 
-            // TODO: validate that ship does not touch other ships
+            if (HasShipNextDoor(ship.Points))
+            {
+                error = "The ship is next to another ship.";
+                return false;
+            }
 
             var shipActor = Context.ActorOf(Props.Create(() => new ShipActor(ship, _gameToken)));
             foreach (var point in ship.Points)
             {
                 _pointActors[point] = shipActor;
             }
+
             _ships.Add(ship);
-            _currentPoints.AddRange(ship.Points);
+            foreach (var point in ship.Points)
+            {
+                _currentPoints[_currentPoints.IndexOf(point)] = point;
+            }
             error = null;
             return true;
         }
 
+        private bool HasShipNextDoor(IEnumerable<Point> points)
+        {
+            return points.Any(HasShipNextDoor);
+        }
+
+        private bool HasShipNextDoor(Point point)
+        {
+            var list = new []
+            {
+                new KeyValuePair<char, byte>((char)(point.X - 1), point.Y),
+                new KeyValuePair<char, byte>((char)(point.X + 1), point.Y),
+                new KeyValuePair<char, byte>(point.X, (byte)(point.Y - 1)),
+                new KeyValuePair<char, byte>(point.X, (byte)(point.Y + 1))
+            };
+            return _currentPoints.Where(d => d.HasShip).Any(c => list.Any(d => d.Key == c.X && d.Value == c.Y));
+        }
+
         private void AddNonShipPoints()
         {
-            for (byte y = 1; y <= 10; ++y)
+            for (var x = Point.A; x <= Point.J; ++x)
             {
-                for (var x = Point.A; x <= Point.J; ++x)
+                for (byte y = 1; y <= 10; ++y)
                 {
                     var point = new Point(x, y, false, false);
-                    if (!_pointActors.ContainsKey(point))
-                    {
-                        _pointActors.Add(point, Context.ActorOf(Props.Create(() => new PointActor(point, _gameToken))));
-                        _currentPoints.Add(point);
-                    }
+                    _currentPoints.Add(point);
                 }
             }
             _currentPoints.Sort();

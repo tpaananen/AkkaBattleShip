@@ -142,6 +142,11 @@ namespace Actors.CSharp
                 }
             });
 
+            Receive<Message.GameTable>(IsForMe, message =>
+            {
+                _playerUserInterface.Tell(message, Self);
+            });
+
             Receive<string>(message => message == "unregister", message =>
             {
                 _gameManager.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);
