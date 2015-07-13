@@ -10,6 +10,7 @@
         ItIsYourTurn = 5,
         YouWon = 6,
         YouLost = 7,
-        GameOver = 8
+        GameOver = 8,
+        Configured = 9
     }
 }

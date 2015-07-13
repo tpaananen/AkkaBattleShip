@@ -35,37 +35,30 @@ namespace BattleShipConsole
             return true;
         }
 
-        public bool CreateShip(string coords, int len, ICollection<Ship> selectedShips)
+        public Ship CreateShip(string coords)
         {
             var split = coords.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries);
             if (split.Length != 2)
             {
-                return false;
+                return null;
             }
 
             Point startPoint;
             if (!ParsePoint(split[0], out startPoint))
             {
-                return false;
+                return null;
             }
 
             Point endPoint;
             if (!ParsePoint(split[1], out endPoint))
             {
-                return false;
+                return null;
             }
 
-            var distance = startPoint.DistanceTo(endPoint);
-            if (distance != len)
-            {
-                Tell("Length of the ship is not " + len + ", but " + distance);
-                return false;
-            }
-
-            return FillAndPushPoints(startPoint, endPoint, selectedShips);
+            return CreateShip(startPoint, endPoint);
         }
 
-        private static bool FillAndPushPoints(Point startPoint, Point endPoint, ICollection<Ship> selectedShips)
+        private static Ship CreateShip(Point startPoint, Point endPoint)
         {
             var list = new List<Point> { startPoint };
             if (startPoint != endPoint)
@@ -92,22 +85,10 @@ namespace BattleShipConsole
                         list.Add(new Point(x, list[0].Y, true, false));
                     }
                 }
-
-                var points = selectedShips.SelectMany(x => x.Points);
-                foreach (var point in points)
-                {
-                    if (list.Contains(point))
-                    {
-                        Tell("The point " + point + " already exists, overlapping ships are not allowed.");
-                        return false;
-                    }
-                }
             }
 
             list.Sort();
-            var ship = new Ship(list);
-            selectedShips.Add(ship);
-            return true;
+            return new Ship(list);
         }
     }
 }

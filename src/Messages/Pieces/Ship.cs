@@ -6,7 +6,12 @@ namespace Messages.CSharp.Pieces
 {
     public class Ship
     {
-        public IReadOnlyList<Point> Points { get; private set; } 
+        public IReadOnlyList<Point> Points { get; private set; }
+
+        public int Length
+        {
+            get { return Points.Count; }
+        }
 
         public Ship(IReadOnlyList<Point> points)
         {
@@ -21,7 +26,7 @@ namespace Messages.CSharp.Pieces
 
             if (horizLen != 1 && vertiLen != 1)
             {
-                throw new InvalidOperationException("Ships must be either vertical or horizontal.");
+                throw new InvalidOperationException("Ship must be either vertical or horizontal.");
             }
 
             var selector = horizLen == 1 ? (Func<Point, int>) (point => point.Y) : (point => point.X);
@@ -32,7 +37,7 @@ namespace Messages.CSharp.Pieces
                 var current = points[i];
                 if (Math.Abs(current - previous) != 1)
                 {
-                    throw new InvalidOperationException("Ships must not have holes.");
+                    throw new InvalidOperationException("Ship must not have holes.");
                 }
                 previous = current;
             }

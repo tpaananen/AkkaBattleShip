@@ -75,25 +75,28 @@ namespace Messages.CSharp
             }
         }
 
-        public class ShipPositions : GameMessage
+        public class ShipPosition : GameMessage
         {
-            public IReadOnlyList<Ship> Ships { get; private set; }
+            public Ship Ship { get; private set; }
 
-            public ShipPositions(Guid token, Guid gameToken, IReadOnlyList<Ship> ships)
+            public ShipPosition(Guid token, Guid gameToken, Ship ship)
                 : base(token, gameToken)
             {
-                Ships = ships;
+                Ship = ship;
             }
         }
 
-        public class GiveMeYourPositions : GameMessage
+        public class GiveMeNextPosition : GameMessage
         {
-            public IReadOnlyCollection<Tuple<string, int>> Ships { get; private set; }
+            public Tuple<string, int> Config { get; private set; }
 
-            public GiveMeYourPositions(Guid token, Guid gameToken, IReadOnlyCollection<Tuple<string, int>> ships)
+            public string ErrorInPreviousConfig { get; private set; }
+
+            public GiveMeNextPosition(Guid token, Guid gameToken, Tuple<string, int> config, string error)
                 : base(token, gameToken)
             {
-                Ships = ships;
+                Config = config;
+                ErrorInPreviousConfig = error;
             }
         }
 
