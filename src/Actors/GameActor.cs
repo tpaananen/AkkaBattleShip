@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Akka.Actor;
 using Messages.CSharp;
-using Messages.CSharp.Containers;
 using Messages.CSharp.Pieces;
 
 // ReSharper disable PossibleUnintendedReferenceComparison
@@ -11,38 +10,11 @@ namespace Actors.CSharp
 {
     public class GameActor : BattleShipActor
     {
-        private class PlayerContainer
-        {
-            public ActorInfoContainer Player { get; private set; }
-            public IActorRef Table { get; private set; }
-            public bool IsInitialized { get; private set; }
-
-            public PlayerContainer(ActorInfoContainer player)
-            {
-                Player = player;
-                Table = null;
-                IsInitialized = false;
-            }
-
-            public void CreateTable(Guid gameToken)
-            {
-                Table = Context.ActorOf(Props.Create(() => new GameTableActor(Player.Token, gameToken)), Player.Token.ToString());
-            }
-
-            public void Ready()
-            {
-                IsInitialized = true;
-            }
-
-            public void Tell(object message, IActorRef sender)
-            {
-                Player.Actor.Tell(message, sender);
-            }
-        }
-
         private PlayerContainer _current;
         private PlayerContainer _opponent;
         private readonly Guid _gameToken;
+        private bool _stopHandled;
+        private readonly ICanTell _gameManager = Context.ActorSelection("/user/gameManager");
 
         public GameActor(Guid gameToken)
         {
@@ -64,8 +36,8 @@ namespace Actors.CSharp
                     _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.Created, Self, "Your opponent is " + _current.Player.Name), Self);
                     _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.PlayerJoined, Self, "Your opponent is " + _opponent.Player.Name), Self);
 
-                    _current.CreateTable(_gameToken);
-                    _opponent.CreateTable(_gameToken);
+                    _current.CreateTable(Context, _gameToken);
+                    _opponent.CreateTable(Context, _gameToken);
 
                     Become(WaitingForPositions);
                 }
@@ -196,6 +168,11 @@ namespace Actors.CSharp
 
         private void HandleStopGame(Guid userTokenWhoRequestedStopping, bool timeout = false)
         {
+            if (_stopHandled)
+            {
+                return;
+            }
+            _stopHandled = true;
             if (userTokenWhoRequestedStopping != Guid.Empty)
             {
                 const string message = "Game forced to stop";
@@ -209,7 +186,8 @@ namespace Actors.CSharp
                 _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, timeout ? GameStatus.GameOver : GameStatus.YouLost, Self, message), Self);
                 _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, timeout ? GameStatus.GameOver : GameStatus.YouWon, Self, message), Self);
             }
-            Context.Parent.Tell(new Message.PlayersFree(_gameToken, _current.Player.Token, _opponent.Player.Token), Self);
+            _gameManager.Tell(new Message.PlayersFree(_gameToken, _current.Player.Token, _opponent.Player.Token), Self);
+            Self.Tell(PoisonPill.Instance);
         }
 
         private void SwithSides()
@@ -260,6 +238,21 @@ namespace Actors.CSharp
                 }
             }
             return array;
+        }
+
+        protected override void PostStop()
+        {
+            HandleStopGame(Guid.Empty);
+        }
+
+        protected override SupervisorStrategy SupervisorStrategy()
+        {
+            return new AllForOneStrategy(x =>
+            {
+                GameLog("An exception occurred: " + x.Message);
+                HandleStopGame(Guid.Empty);
+                return Directive.Stop;
+            });
         }
     }
 }

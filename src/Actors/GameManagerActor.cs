@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
 using Akka.Actor;
 using Messages.CSharp;
 using Messages.CSharp.Containers;
@@ -100,5 +101,10 @@ namespace Actors.CSharp
         }
 
         #endregion
+
+        protected override SupervisorStrategy SupervisorStrategy()
+        {
+            return new OneForOneStrategy(x => Directive.Restart);
+        }
     }
 }

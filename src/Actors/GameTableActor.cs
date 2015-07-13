@@ -191,5 +191,10 @@ namespace Actors.CSharp
             }
             _currentPoints.Sort();
         }
+
+        protected override SupervisorStrategy SupervisorStrategy()
+        {
+            return new AllForOneStrategy(x => Directive.Escalate);
+        }
     }
 }

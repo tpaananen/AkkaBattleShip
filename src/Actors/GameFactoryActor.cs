@@ -29,11 +29,9 @@ namespace Actors.CSharp
                 Become(WaitingForSecondPlayer);
             });
 
-            Receive<Message.PlayersFree>(HasSender, message =>
+            Receive<Message.StopGame>(message =>
             {
-                Log.Info("Game factory to destroy the game with token " + message.GameToken);
-                Context.Parent.Tell(message, Self);
-                Sender.Tell(PoisonPill.Instance);
+                StopGame(message);
             });
         }
 
@@ -46,22 +44,29 @@ namespace Actors.CSharp
                 Become(WaitingForFirstPlayer);
             });
 
-            Receive<Message.PlayersFree>(HasSender, message =>
-            {
-                Log.Info("Game factory to destroy the game with token " + message.GameToken);
-                Context.Parent.Tell(message, Self);
-                Sender.Tell(PoisonPill.Instance);
-            });
-
             Receive<Message.StopGame>(message =>
             {
-                Context.ActorSelection(message.GameToken.ToString()).Tell(message, Self);
+                StopGame(message);
             });
+        }
+
+        protected override void PreRestart(Exception reason, object message)
+        {
+            if (_currentGameToken != Guid.Empty)
+            {
+                _gameUnderConstruction.Tell(new Message.StopGame(Guid.Empty, _currentGameToken));
+            }
+            base.PreRestart(reason, message);
         }
 
         protected override SupervisorStrategy SupervisorStrategy()
         {
-            return base.SupervisorStrategy(); // TODO: supervise games
+            return new OneForOneStrategy(x => Directive.Resume);
+        }
+
+        private void StopGame(Message.StopGame message)
+        {
+            Context.ActorSelection(message.GameToken.ToString()).Tell(message, Self);
         }
     }
 }
