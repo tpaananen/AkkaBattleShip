@@ -76,6 +76,7 @@
     <Compile Include="PointActor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ShipActor.cs" />
+    <Compile Include="ShipValidator.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Messages\Messages.CSharp.csproj">

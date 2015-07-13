@@ -10,7 +10,7 @@ namespace Actors.CSharp
     public class GameTableActor : BattleShipActor
     {
         private readonly List<Ship> _ships = new List<Ship>();
-        private readonly Dictionary<Point, IActorRef> _pointActors = new Dictionary<Point, IActorRef>(100); 
+        private readonly Dictionary<Point, IActorRef> _pointActors = new Dictionary<Point, IActorRef>(100);
         private readonly List<Point> _currentPoints = new List<Point>(100);
         private Stack<Tuple<string, int>> _shipConfig = new Stack<Tuple<string, int>>(TablesAndShips.Ships);
 
@@ -129,54 +129,21 @@ namespace Actors.CSharp
         private bool AddToTable(Ship ship, out string error)
         {
             var currentItem = _shipConfig.Peek();
-            if (ship.Length != currentItem.Item2)
+            if (!ShipValidator.IsValid(_currentPoints, currentItem.Item2, ship, out error))
             {
-                error = "The given ship length is not " + currentItem.Item1;
-                return false;
-            }
-
-            if (_currentPoints.Where(d => d.HasShip).Intersect(ship.Points).Any())
-            {
-                error = "The given ship overlaps with the existing ship.";
-                return false; // point already exists
-            }
-
-            if (HasShipNextDoor(ship.Points))
-            {
-                error = "The ship is next to another ship.";
                 return false;
             }
 
             var shipActor = Context.ActorOf(Props.Create(() => new ShipActor(ship, _gameToken)));
-            foreach (var point in ship.Points)
-            {
-                _pointActors[point] = shipActor;
-            }
-
             _ships.Add(ship);
             foreach (var point in ship.Points)
             {
+                _pointActors[point] = shipActor;
                 _currentPoints[_currentPoints.IndexOf(point)] = point;
             }
+            
             error = null;
             return true;
-        }
-
-        private bool HasShipNextDoor(IEnumerable<Point> points)
-        {
-            return points.Any(HasShipNextDoor);
-        }
-
-        private bool HasShipNextDoor(Point point)
-        {
-            var list = new []
-            {
-                new KeyValuePair<char, byte>((char)(point.X - 1), point.Y),
-                new KeyValuePair<char, byte>((char)(point.X + 1), point.Y),
-                new KeyValuePair<char, byte>(point.X, (byte)(point.Y - 1)),
-                new KeyValuePair<char, byte>(point.X, (byte)(point.Y + 1))
-            };
-            return _currentPoints.Where(d => d.HasShip).Any(c => list.Any(d => d.Key == c.X && d.Value == c.Y));
         }
 
         private void AddNonShipPoints()

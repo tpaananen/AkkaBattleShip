@@ -14,7 +14,7 @@ namespace Actors.CSharp
         private PlayerContainer _opponent;
         private readonly Guid _gameToken;
         private bool _stopHandled;
-        private readonly ICanTell _gameManager = Context.ActorSelection("/user/gameManager");
+        private readonly ICanTell _gameManager = ActorSystemContext.VirtualManager();
 
         public GameActor(Guid gameToken)
         {
@@ -105,7 +105,7 @@ namespace Actors.CSharp
         {
             #region Player points
 
-            Receive<Message.Missile>(message => IsForMe(message) && message.Token == _current.Player.Token, message => // _current.Player.Actor |> _opponent.Table
+            Receive<Message.Missile>(message => IsForMe(message) && message.Token == _current.Player.Token, message =>
             {
                 _opponent.Table.Tell(message, Self);
             });
