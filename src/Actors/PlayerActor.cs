@@ -87,32 +87,46 @@ namespace Actors.CSharp
                 _gameManager.Tell(new Message.CreateGame(_token), Self);
             });
 
-            Receive<Message.GameStatusUpdate>(message => message.Status == GameStatus.Created, message =>
+            Receive<Message.GameStatusUpdate>(message =>
             {
-                _currentGameToken = message.GameToken;
-                _currentGame = message.Game;
-                if (!string.IsNullOrEmpty(message.Message))
+                switch (message.Status)
                 {
-                    _playerUserInterface.Tell(message.Message, Self);
+                    case GameStatus.Created:
+                        _currentGameToken = message.GameToken;
+                        _currentGame = message.Game;
+                        if (!string.IsNullOrEmpty(message.Message))
+                        {
+                            _playerUserInterface.Tell(message.Message, Self);
+                        }
+                        else
+                        {
+                            _playerUserInterface.Tell("Game created with token " + message.GameToken, Self);
+                        }
+                        break;
+                    case GameStatus.PlayerJoined:
+                        _playerUserInterface.Tell(message.Message, Self);
+                        break;
+                    case GameStatus.GameStartedOpponentStarts:
+                        _playerUserInterface.Tell("Opponent starts...");
+                        Become(GameStarted);
+                        break;
+                    case GameStatus.GameStartedYouStart:
+                        _playerUserInterface.Tell("coord", Self);
+                        Become(GameStarted);
+                        break;
+                    default:
+                        _currentGame = null;
+                        _currentGameToken = Guid.Empty;
+                        if (!string.IsNullOrEmpty(message.Message))
+                        {
+                            _playerUserInterface.Tell(message, Self);
+                        }
+                        Become(InLobby);
+                        break;
                 }
-                else
-                {
-                    _playerUserInterface.Tell("Game created with token " + message.GameToken, Self);
-                }
             });
 
-            Receive<Message.GameStatusUpdate>(message => message.Status == GameStatus.PlayerJoined, message =>
-            {
-                _playerUserInterface.Tell(message.Message, Self);
-            });
-
-            Receive<Message.GameStatusUpdate>(message => message.Status == GameStatus.YouLost, message =>
-            {
-                _playerUserInterface.Tell(message.Message, Self);
-                Become(InLobby);
-            });
-
-            Receive<Message.GiveMeYourPositions>(message =>
+            Receive<Message.GiveMeNextPosition>(message =>
             {
                 if (message.GameToken == _currentGameToken)
                 {
@@ -120,10 +134,17 @@ namespace Actors.CSharp
                 }
             });
 
-            Receive<Message.ShipPositions>(message =>
+            Receive<Message.ShipPosition>(message =>
             {
-                _currentGame.Tell(new Message.ShipPositions(_token, _currentGameToken, message.Ships), Self);
-                Become(WaitingForGameStart);
+                if (_currentGame != null)
+                {
+                    _currentGame.Tell(new Message.ShipPosition(_token, _currentGameToken, message.Ship), Self);
+                }
+            });
+
+            Receive<Message.GameTable>(IsForMe, message =>
+            {
+                _playerUserInterface.Tell(message, Self);
             });
 
             Receive<string>(message => message == "unregister", message =>
@@ -138,44 +159,6 @@ namespace Actors.CSharp
             });
 
             _playerUserInterface.Tell("join", Self);
-        }
-
-        private void WaitingForGameStart()
-        {
-            Receive<Message.GameStatusUpdate>(message =>
-            {
-                if (message.GameToken != _currentGameToken)
-                {
-                    Log.Debug("Invalid game token in GameStatusUpdate");
-                    return;
-                }
-
-                if (message.Status == GameStatus.GameStartedOpponentStarts)
-                {
-                    _playerUserInterface.Tell("Opponent starts...");
-                }
-                else if (message.Status == GameStatus.GameStartedYouStart)
-                {
-                    _playerUserInterface.Tell("coord", Self);                    
-                }
-                else
-                {
-                    _currentGame = null;
-                    _currentGameToken = Guid.Empty;
-                    if (!string.IsNullOrEmpty(message.Message))
-                    {
-                        _playerUserInterface.Tell(message.Message, Self);
-                    }
-                    Become(InLobby);
-                    return;
-                }
-                Become(GameStarted);
-            });
-
-            ReceiveAny(message =>
-            {
-                Log.Debug("Unhandled message of type " + message.GetType() + " received in WaitingForGameStart state...");
-            });
         }
 
         private void GameStarted()
@@ -215,22 +198,10 @@ namespace Actors.CSharp
                  message.Status == GameStatus.GameOver), 
             message =>
             {
-                if (message.Status != GameStatus.GameOver)
-                {
-                    _playerUserInterface.Tell(message.Status == GameStatus.YouWon ? "You won!" : "You lost!", Self);
-                }
-                else
-                {
-                    _playerUserInterface.Tell(message.Message, Self);
-                }
+                _playerUserInterface.Tell(message, Self);
                 _currentGameToken = Guid.Empty;
                 _currentGame = null;
                 Become(InLobby);
-            });
-
-            ReceiveAny(message =>
-            {
-                Log.Debug("Unhandled message of type " + message.GetType() + " received in GameStarted state...");
             });
         }
 

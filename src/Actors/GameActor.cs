@@ -24,9 +24,13 @@ namespace Actors.CSharp
                 IsInitialized = false;
             }
 
-            public void CreateTable(Guid gameToken, IReadOnlyList<Ship> ships)
+            public void CreateTable(Guid gameToken)
             {
-                Table = Context.ActorOf(Props.Create(() => new GameTableActor(gameToken, ships)), "P1:" + Player.Name);
+                Table = Context.ActorOf(Props.Create(() => new GameTableActor(Player.Token, gameToken)), Player.Token.ToString());
+            }
+
+            public void Ready()
+            {
                 IsInitialized = true;
             }
 
@@ -47,6 +51,7 @@ namespace Actors.CSharp
             Receive<Message.PlayerJoining>(IsForMe, message =>
             {
                 var player = new PlayerContainer(message.Player);
+                
                 GameLog("Player " + message.Player.Name + " arrived");
                 if (_current == null)
                 {
@@ -59,8 +64,9 @@ namespace Actors.CSharp
                     _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.Created, Self, "Your opponent is " + _current.Player.Name), Self);
                     _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.PlayerJoined, Self, "Your opponent is " + _opponent.Player.Name), Self);
 
-                    _current.Tell(new Message.GiveMeYourPositions(_current.Player.Token, _gameToken, TablesAndShips.Ships), Self);
-                    _opponent.Tell(new Message.GiveMeYourPositions(_opponent.Player.Token, _gameToken, TablesAndShips.Ships), Self);
+                    _current.CreateTable(_gameToken);
+                    _opponent.CreateTable(_gameToken);
+
                     Become(WaitingForPositions);
                 }
             });
@@ -69,11 +75,6 @@ namespace Actors.CSharp
             {
                 HandleStopGame(message.Token);
             });
-
-            ReceiveAny(message =>
-            {
-                GameLog("Unhandled message of type " + message.GetType() + " received in intial state...");
-            });
         }
 
         private void WaitingForPositions()
@@ -81,17 +82,26 @@ namespace Actors.CSharp
             SetReceiveTimeout(TimeSpan.FromSeconds(120));
             GameLog("Using 120 seconds receive timeout");
 
-            Receive<Message.ShipPositions>(IsForMe, message =>
+            Receive<Message.GiveMeNextPosition>(message =>
             {
                 var player = GetPlayer(message.Token);
+                player.Tell(message, Self);
+            });
+
+            Receive<Message.ShipPosition>(IsForMe, message =>
+            {
+                var player = GetPlayer(message.Token);
+                player.Table.Tell(message, Self);
+            });
+
+            Receive<Message.GameStatusUpdate>(message => message.Status == GameStatus.Configured, message =>
+            {
+                var player = GetPlayer(message.Token);
+                player.Ready();
+
                 var otherPlayer = GetOtherPlayer(message.Token);
-
-                GameLog("Player " + player.Player.Name + " ships have arrived");
-
-                player.CreateTable(_gameToken, message.Ships);
-                if (player.IsInitialized && otherPlayer.IsInitialized)
+                if (otherPlayer.IsInitialized)
                 {
-                    // First player that provided the ships will start the game
                     otherPlayer.Tell(new Message.GameStatusUpdate(otherPlayer.Player.Token, _gameToken, GameStatus.GameStartedYouStart, Self), Self);
                     player.Tell(new Message.GameStatusUpdate(player.Player.Token, _gameToken, GameStatus.GameStartedOpponentStarts, Self), Self);
                     if (otherPlayer.Player.Token != _current.Player.Token)
@@ -100,6 +110,12 @@ namespace Actors.CSharp
                     }
                     Become(GameOn);
                 }
+            });
+
+            Receive<Message.GameTable>(message =>
+            {
+                var player = GetPlayer(message.Token);
+                player.Tell(message, Self);
             });
 
             Receive<Message.StopGame>(IsForMe, message =>
@@ -111,14 +127,7 @@ namespace Actors.CSharp
             {
                 HandleStopGame(Guid.Empty, true);
             });
-
-            ReceiveAny(message =>
-            {
-                GameLog("Unhandled message of type " + message.GetType() + " received in WaitingForPositions state...");
-            });
         }
-
-        // TODO: table to current user where there is no ship info
 
         private void GameOn()
         {
@@ -133,10 +142,10 @@ namespace Actors.CSharp
 
             #region Table responses
 
-            Receive<IReadOnlyList<Point>>(message =>
+            Receive<Message.GameTable>(message =>
             {
-                _opponent.Tell(new Message.GameTable(_opponent.Player.Token, _gameToken, message), Self);
-                _current.Tell(new Message.GameTable(_current.Player.Token, _gameToken, RemoveShipInfo(message)), Self);
+                _opponent.Tell(new Message.GameTable(_opponent.Player.Token, _gameToken, message.Points), Self);
+                _current.Tell(new Message.GameTable(_current.Player.Token, _gameToken, RemoveShipInfo(message.Points)), Self);
             });
 
             Receive<Message.MissileWasAHit>(IsForMe, message =>
@@ -176,11 +185,6 @@ namespace Actors.CSharp
             Receive<ReceiveTimeout>(message =>
             {
                 HandleStopGame(Guid.Empty, true);
-            });
-
-            ReceiveAny(message =>
-            {
-                GameLog("Unhandled message of type " + message.GetType() + " received in PlayerOne state...");
             });
         }
 

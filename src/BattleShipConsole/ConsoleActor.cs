@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Actors.CSharp;
 using Akka.Actor;
 using Messages.CSharp;
@@ -11,8 +11,9 @@ namespace BattleShipConsole
     {
         private readonly TableWriter _tableWriter = new TableWriter();
         private readonly PointReader _pointReader = new PointReader();
-        private Stack<Tuple<string, int>> _stack;
-        private List<Ship> _selectedShips;
+
+        private static readonly Regex ShipMatcher = new Regex("^[a-jA-J]{1}([1-9]|10){1}[:]{1}[a-jA-J]{1}([1-9]|10){1}$", RegexOptions.Compiled);
+        private static readonly Regex PointMatcher = new Regex("^[a-jA-J]{1}([1-9]|10){1}$", RegexOptions.Compiled);
 
         public ConsoleActor()
         {
@@ -30,6 +31,11 @@ namespace BattleShipConsole
             Receive<string>(message =>
             {
                 Tell(message);
+            });
+
+            Receive<Message.GameStatusUpdate>(message =>
+            {
+                HandleStatusMessage(message);
             });
         }
 
@@ -54,15 +60,28 @@ namespace BattleShipConsole
                     Self.Tell("join");
                 }
             });
+
+            Receive<Message.GameStatusUpdate>(message =>
+            {
+                HandleStatusMessage(message);
+            });
         }
 
         private void Waiting()
         {
-            Receive<Message.GiveMeYourPositions>(message =>
+            Receive<Message.GiveMeNextPosition>(message =>
             {
-                Tell("Coordinates format: A1:A5 -> a length of 4 ship vertically positioned");
-                _stack = new Stack<Tuple<string, int>>(message.Ships);
-                Become(GettingPoints);
+                if (!string.IsNullOrEmpty(message.ErrorInPreviousConfig))
+                {
+                    Tell(message.ErrorInPreviousConfig);
+                }
+                Tell("Coordinates format: A1:A5 -> a length of 5 ship vertically positioned");
+                Tell("Give coordinates for " + message.Config.Item1 + " (len: " + message.Config.Item2 + "): ");
+            });
+
+            Receive<string>(message => message == "coord" && Sender == Context.Parent, message =>
+            {
+                Tell("Your turn, give the next position to hit (format: A10) : ");
             });
 
             Receive<Message.GameTable>(message =>
@@ -70,16 +89,23 @@ namespace BattleShipConsole
                 _tableWriter.ShowTable(message.Points);
             });
 
-            Receive<string>(message => message == "coord", message =>
+            Receive<Message.GameStatusUpdate>(message =>
             {
-                Tell("Your turn, give the next position to hit (format: A10) : ");
-                Become(GettingSinglePoint);
+                HandleStatusMessage(message);
             });
-        }
 
-        private void GettingSinglePoint()
-        {
-            Receive<string>(message =>
+            Receive<string>(message => ShipMatcher.IsMatch(message), message =>
+            {
+                var ship = _pointReader.CreateShip(message);
+                if (ship != null)
+                {
+                    Context.Parent.Tell(new Message.ShipPosition(Guid.Empty, Guid.Empty, ship), Self);
+                    return;
+                }
+                Tell("Invalid ship config, try again");
+            });
+
+            Receive<string>(message => PointMatcher.IsMatch(message), message =>
             {
                 Point point;
                 if (!_pointReader.ParsePoint(message, out point))
@@ -91,35 +117,28 @@ namespace BattleShipConsole
                 Become(Waiting);
                 Context.Parent.Tell(point, Self);
             });
-        }
-
-        private void GettingPoints()
-        {
-            Receive<string>(message => message == "get" && _stack.Count != 0, message =>
-            {
-                var item = _stack.Peek();
-                Tell("Give coordinates for " + item.Item1 + " (len: " + item.Item2 + "): ");
-            });
-
-            Receive<string>(message => message == "get" && _stack.Count == 0, message =>
-            {
-                Become(Waiting);
-                Context.Parent.Tell(new Message.ShipPositions(Guid.Empty, Guid.Empty, _selectedShips), Self);
-                Tell("That's all, waiting for game to begin...");
-            });
 
             Receive<string>(message =>
             {
-                var item = _stack.Pop();
-                if (!_pointReader.CreateShip(message, item.Item2, _selectedShips))
-                {
-                    _stack.Push(item);
-                }
-                Self.Tell("get");
+                Tell(message);
             });
+        }
 
-            _selectedShips = new List<Ship>();
-            Self.Tell("get");
+        private void HandleStatusMessage(Message.GameStatusUpdate message)
+        {
+            if (!string.IsNullOrEmpty(message.Message))
+            {
+                Tell(message.Message);
+            }
+            if (message.Status == GameStatus.GameOver || message.Status == GameStatus.YouLost ||
+                message.Status == GameStatus.YouWon)
+            {
+                if (message.Status != GameStatus.GameOver)
+                {
+                    Tell(message.Status == GameStatus.YouWon ? "You won!" : "You lost!");
+                }
+                Become(Idle);
+            }
         }
 
         protected override void PreRestart(Exception reason, object message)

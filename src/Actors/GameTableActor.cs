@@ -9,17 +9,35 @@ namespace Actors.CSharp
 {
     public class GameTableActor : BattleShipActor
     {
-        private readonly List<Ship> _ships; 
+        private readonly List<Ship> _ships = new List<Ship>();
         private readonly Dictionary<Point, IActorRef> _pointActors = new Dictionary<Point, IActorRef>(100); 
         private readonly List<Point> _currentPoints = new List<Point>(100);
+        private Stack<Tuple<string, int>> _shipConfig = new Stack<Tuple<string, int>>(TablesAndShips.Ships);
+
+        private readonly Guid _playerToken;
         private readonly Guid _gameToken;
 
-        public GameTableActor(Guid gameToken, IReadOnlyList<Ship> ships)
+        public GameTableActor(Guid playerToken, Guid gameToken)
         {
-            _ships = new List<Ship>(ships);
+            _playerToken = playerToken;
             _gameToken = gameToken;
-            IntializeTable(ships);
-            Become(GameOn);
+            AddNonShipPoints();
+            SendPositionRequestOrBecomeReady(null);
+            Become(Configuring);
+        }
+
+        private void Configuring()
+        {
+            Receive<Message.ShipPosition>(message => message.Token == _playerToken && message.GameToken == _gameToken, message =>
+            {
+                string error;
+                if (AddToTable(message.Ship, out error))
+                {
+                    _shipConfig.Pop();
+                    Context.Parent.Tell(new Message.GameTable(_playerToken, _gameToken, _currentPoints), Self);
+                }
+                SendPositionRequestOrBecomeReady(error);
+            });
         }
 
         private void GameOn()
@@ -30,7 +48,7 @@ namespace Actors.CSharp
                 if (!_pointActors.TryGetValue(message.Point, out pointActor))
                 {
                     Log.Error("Invalid point " + message.Point + " received.");
-                    Context.Parent.Tell(new Message.MissileDidNotHitShip(Guid.Empty, _gameToken, message.Point), Self);
+                    Context.Parent.Tell(new Message.MissileDidNotHitShip(_playerToken, _gameToken, message.Point), Self);
                     return;
                 }
                 pointActor.Tell(message, Self);
@@ -39,7 +57,7 @@ namespace Actors.CSharp
             Receive<Message.PartOfTheShipDestroyed>(message =>
             {
                 ReportTable(message);
-                Context.Parent.Tell(new Message.MissileWasAHit(Guid.Empty, _gameToken, message.Point), Self);
+                Context.Parent.Tell(new Message.MissileWasAHit(_playerToken, _gameToken, message.Point), Self);
             });
 
             Receive<Message.ShipDestroyed>(message =>
@@ -52,7 +70,7 @@ namespace Actors.CSharp
                 }
                 else
                 {
-                    Context.Parent.Tell(new Message.MissileWasAHit(Guid.Empty, _gameToken, message.Point, true));
+                    Context.Parent.Tell(new Message.MissileWasAHit(_playerToken, _gameToken, message.Point, true));
                 }
             });
 
@@ -77,16 +95,12 @@ namespace Actors.CSharp
         private void ReportTable(Message.WithPoint message)
         {
             ReplacePoint(message);
-            Context.Parent.Tell(ConstructTableStatusMessage(), Self);
+            Context.Parent.Tell(new Message.GameTable(_playerToken, _gameToken, _currentPoints), Self);
         }
 
         private void GameOver()
         {
-            Context.Parent.Tell(new Message.GameOver(Guid.Empty, _gameToken), Self);
-            ReceiveAny(message =>
-            {
-                Log.Error("Message received while game over");
-            });
+            Context.Parent.Tell(new Message.GameOver(_playerToken, _gameToken), Self);
         }
 
         private void ReplacePoint(Message.WithPoint message)
@@ -94,33 +108,85 @@ namespace Actors.CSharp
             _currentPoints[_currentPoints.IndexOf(message.Point)] = message.Point;
         }
 
-        private IReadOnlyList<Point> ConstructTableStatusMessage()
+        private void SendPositionRequestOrBecomeReady(string error)
         {
-            return _currentPoints;
+            if (_shipConfig.Count > 0)
+            {
+                Context.Parent.Tell(new Message.GiveMeNextPosition(_playerToken, _gameToken, _shipConfig.Peek(), error), Self);
+            }
+            else
+            {
+                _shipConfig = null;
+                foreach (var point in _currentPoints.Where(d => !d.HasShip))
+                {
+                    _pointActors.Add(point, Context.ActorOf(Props.Create(() => new PointActor(point, _gameToken))));
+                }
+                Context.Parent.Tell(new Message.GameStatusUpdate(_playerToken, _gameToken, GameStatus.Configured, null), Self);
+                Become(GameOn);
+            }
         }
 
-        private void IntializeTable(IEnumerable<Ship> ships)
+        private bool AddToTable(Ship ship, out string error)
         {
-            foreach (var ship in ships)
+            var currentItem = _shipConfig.Peek();
+            if (ship.Length != currentItem.Item2)
             {
-                var shipActor = Context.ActorOf(Props.Create(() => new ShipActor(ship, _gameToken)));
-                foreach (var point in ship.Points)
-                {
-                    _pointActors[point] = shipActor;
-                }
-                _currentPoints.AddRange(ship.Points);
+                error = "The given ship length is not " + currentItem.Item1;
+                return false;
             }
 
-            for (byte y = 1; y <= 10; ++y)
+            if (_currentPoints.Where(d => d.HasShip).Intersect(ship.Points).Any())
             {
-                for (var x = Point.A; x <= Point.J; ++x)
+                error = "The given ship overlaps with the existing ship.";
+                return false; // point already exists
+            }
+
+            if (HasShipNextDoor(ship.Points))
+            {
+                error = "The ship is next to another ship.";
+                return false;
+            }
+
+            var shipActor = Context.ActorOf(Props.Create(() => new ShipActor(ship, _gameToken)));
+            foreach (var point in ship.Points)
+            {
+                _pointActors[point] = shipActor;
+            }
+
+            _ships.Add(ship);
+            foreach (var point in ship.Points)
+            {
+                _currentPoints[_currentPoints.IndexOf(point)] = point;
+            }
+            error = null;
+            return true;
+        }
+
+        private bool HasShipNextDoor(IEnumerable<Point> points)
+        {
+            return points.Any(HasShipNextDoor);
+        }
+
+        private bool HasShipNextDoor(Point point)
+        {
+            var list = new []
+            {
+                new KeyValuePair<char, byte>((char)(point.X - 1), point.Y),
+                new KeyValuePair<char, byte>((char)(point.X + 1), point.Y),
+                new KeyValuePair<char, byte>(point.X, (byte)(point.Y - 1)),
+                new KeyValuePair<char, byte>(point.X, (byte)(point.Y + 1))
+            };
+            return _currentPoints.Where(d => d.HasShip).Any(c => list.Any(d => d.Key == c.X && d.Value == c.Y));
+        }
+
+        private void AddNonShipPoints()
+        {
+            for (var x = Point.A; x <= Point.J; ++x)
+            {
+                for (byte y = 1; y <= 10; ++y)
                 {
                     var point = new Point(x, y, false, false);
-                    if (!_pointActors.ContainsKey(point))
-                    {
-                        _pointActors.Add(point, Context.ActorOf(Props.Create(() => new PointActor(point, _gameToken))));
-                        _currentPoints.Add(point);
-                    }
+                    _currentPoints.Add(point);
                 }
             }
             _currentPoints.Sort();
