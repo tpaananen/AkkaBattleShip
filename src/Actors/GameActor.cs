@@ -78,7 +78,7 @@ namespace Actors.CSharp
                     player.Tell(new Message.GameStatusUpdate(player.Player.Token, _gameToken, GameStatus.GameStartedOpponentStarts, Self), Self);
                     if (otherPlayer.Player.Token != _current.Player.Token)
                     {
-                        SwithSides();
+                        SwitchSides();
                     }
                     Become(GameOn);
                 }
@@ -131,7 +131,7 @@ namespace Actors.CSharp
             {
                 _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.ItIsYourTurn, Self, "Opponents missile did not hit at " + message.Point), Self);
                 _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, GameStatus.None, Self, "Your missile did not hit at " + message.Point), Self);
-                SwithSides();
+                SwitchSides();
             });
 
             Receive<Message.GameOver>(IsForMe, message =>
@@ -144,7 +144,7 @@ namespace Actors.CSharp
                 var error = "Opponent used the same point again at " + message.Point;
                 _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, GameStatus.ItIsYourTurn, Self, error), Self);
                 _current.Tell(new Message.MissileAlreadyHit(_current.Player.Token, _gameToken, message.Point), Self);
-                SwithSides();
+                SwitchSides();
             });
 
             #endregion
@@ -190,7 +190,7 @@ namespace Actors.CSharp
             Self.Tell(PoisonPill.Instance);
         }
 
-        private void SwithSides()
+        private void SwitchSides()
         {
             var current = _current;
             _current = _opponent;

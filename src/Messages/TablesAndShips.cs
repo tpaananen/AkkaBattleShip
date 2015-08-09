@@ -17,7 +17,5 @@ namespace Messages.CSharp
                 Tuple.Create("Destroyer", 2),
                 Tuple.Create("Submarine", 1)
             });
-
-
     }
 }
