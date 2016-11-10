@@ -108,7 +108,7 @@ namespace BattleShipConsole
             Receive<string>(message => PointMatcher.IsMatch(message), message =>
             {
                 Point point;
-                if (!_pointReader.ParsePoint(message, out point))
+                if (!PointReader.ParsePoint(message, out point))
                 {
                     Become(Idle);
                     Self.Tell("coord");

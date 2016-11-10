@@ -12,7 +12,7 @@ namespace BattleShipServer
             using (var system = ActorSystemContext.CreateActorSystemContext(config))
             {
                 ActorSystemContext.CreateManager();
-                system.AwaitTermination();
+                system.WhenTerminated.Wait();
             }
         }
     }

@@ -33,10 +33,10 @@ namespace Actors.CSharp
         {
             var list = new[]
             {
-                new KeyValuePair<char, byte>((char)(point.X - 1), point.Y),
-                new KeyValuePair<char, byte>((char)(point.X + 1), point.Y),
-                new KeyValuePair<char, byte>(point.X, (byte)(point.Y - 1)),
-                new KeyValuePair<char, byte>(point.X, (byte)(point.Y + 1))
+                new KeyValuePair<char, int>((char)(point.X - 1), point.Y),
+                new KeyValuePair<char, int>((char)(point.X + 1), point.Y),
+                new KeyValuePair<char, int>((char)point.X, (byte)(point.Y - 1)),
+                new KeyValuePair<char, int>((char)point.X, (byte)(point.Y + 1))
             };
             return points.Where(d => d.HasShip).Any(c => list.Any(d => d.Key == c.X && d.Value == c.Y));
         }
