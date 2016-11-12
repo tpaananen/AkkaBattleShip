@@ -13,7 +13,6 @@ namespace Messages.CSharp
             {
                 Token = token;
             }
-
         }
     }
 }

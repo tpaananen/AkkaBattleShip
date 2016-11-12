@@ -65,5 +65,15 @@ namespace Messages.CSharp
                 Tokens = tokens;
             }
         }
+
+        public class PlayerTerminated
+        {
+            public Guid Token { get; private set; }
+
+            public PlayerTerminated(Guid token)
+            {
+                Token = token;
+            }
+        }
     }
 }
