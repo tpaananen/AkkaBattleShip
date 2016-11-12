@@ -34,7 +34,8 @@ namespace Actors.CSharp
             });
 
             Receive<Message.StopGame>(message => StopGame(message));
-            Receive<Message.PlayersFree>(message => Context.Parent.Forward(message));
+            Receive<Message.PlayersFree>(message => FreePlayers(message));
+
         }
 
         private void WaitingForSecondPlayer()
@@ -47,7 +48,7 @@ namespace Actors.CSharp
             });
 
             Receive<Message.StopGame>(message => StopGame(message));
-            Receive<Message.PlayersFree>(message => Context.Parent.Forward(message));
+            Receive<Message.PlayersFree>(message => FreePlayers(message));
         }
 
         protected override void PreRestart(Exception reason, object message)
@@ -73,8 +74,19 @@ namespace Actors.CSharp
             if (_activeGames.TryGetValue(message.GameToken, out game))
             {
                 game.Tell(message, Self);
-                _activeGames.Remove(message.GameToken);
+                RemoveGame(message.GameToken);
             }
+        }
+
+        private void FreePlayers(Message.PlayersFree message)
+        {
+            Context.Parent.Forward(message);
+            RemoveGame(message.GameToken);
+        }
+
+        private void RemoveGame(Guid gameToken)
+        {
+            _activeGames.Remove(gameToken);
         }
     }
 }
