@@ -125,7 +125,7 @@ namespace Actors.CSharp
             return new OneForOneStrategy(x =>
             {
                 Log.Error(x.Message);
-                return Directive.Restart;
+                return Directive.Resume;
             });
         }
     }
