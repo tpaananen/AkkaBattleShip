@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using Akka.Actor;
 using Messages.CSharp;
 using Messages.CSharp.Containers;
@@ -31,6 +30,7 @@ namespace Actors.CSharp
                 var container = CreateActorInfoContainer(message.Name, Sender);
                 _players.Add(Sender, container);
                 Sender.Tell(new Message.RegisterPlayerResponse(container.Token, true), Self);
+                Context.Watch(Sender);
             });
 
             Receive<Message.UnregisterPlayer>(HasSender, message =>
@@ -46,6 +46,12 @@ namespace Actors.CSharp
                 {
                     _gameFactory.Tell(new Message.StopGame(message.Token, message.GameToken));
                 }
+                else
+                {
+                    _gameFactory.Tell(new Message.PlayerTerminated(message.Token), Self);
+                }
+
+                Context.Unwatch(Sender);
             });
 
             Receive<Message.CreateGame>(HasSender, message =>
@@ -80,6 +86,18 @@ namespace Actors.CSharp
                     _playerTokens.Remove(token);
                 }
             });
+
+            Receive<Terminated>(message =>
+            {
+                ActorInfoContainer container;
+                if (_players.TryGetValue(message.ActorRef, out container))
+                {
+                    Log.Info($"Remote player {container.Name} terminated, removing...");
+                    _players.Remove(message.ActorRef);
+                    _gameFactory.Tell(new Message.PlayerTerminated(container.Token), Self);
+                }
+                Context.Unwatch(message.ActorRef);
+            });
         }
 
         #region Helpers
@@ -104,7 +122,11 @@ namespace Actors.CSharp
 
         protected override SupervisorStrategy SupervisorStrategy()
         {
-            return new OneForOneStrategy(x => Directive.Restart);
+            return new OneForOneStrategy(x =>
+            {
+                Log.Error(x.Message);
+                return Directive.Resume;
+            });
         }
     }
 }

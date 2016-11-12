@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Akka.Actor;
 using Messages.CSharp.Containers;
 using Messages.CSharp.Pieces;
 
 namespace Messages.CSharp
 {
+    [DebuggerStepThrough]
     public abstract partial class Message
     {
 

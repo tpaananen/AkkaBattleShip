@@ -17,7 +17,7 @@ namespace Actors.CSharp
 
         private readonly string _name;
 
-        private readonly ICanTell _gameManager;
+        private IActorRef _gameManager;
         private readonly IActorRef _reader;
 
         public PlayerActor(string name, Props propsForUserInteracting, IActorRef reader)
@@ -26,7 +26,6 @@ namespace Actors.CSharp
             _name = name;
             _playerUserInterface = Context.ActorOf(propsForUserInteracting, "ui");
             _reader.Tell(_playerUserInterface);
-            _gameManager = ActorSystemContext.VirtualManager();
             Become(Unregistered);
         }
 
@@ -35,7 +34,7 @@ namespace Actors.CSharp
             _reader.Tell(_playerUserInterface);
             if (_token != Guid.Empty)
             {
-                _gameManager.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);
+                _gameManager?.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);
             }
             Context.Stop(_playerUserInterface);
             base.PreRestart(reason, message);
@@ -54,13 +53,14 @@ namespace Actors.CSharp
 
             Receive<string>(message => message == "register", message =>
             {
-                _gameManager.Tell(new Message.RegisterPlayer(_name), Self);
+                ActorSystemContext.VirtualManager().Tell(new Message.RegisterPlayer(_name), Self);
             });
 
             Receive<Message.RegisterPlayerResponse>(message =>
             {
                 if (message.IsValid)
                 {
+                    _gameManager = Sender;
                     _token = message.Token;
                     _playerUserInterface.Tell("Registered to server with token " + message.Token, Self);
                     Become(InLobby);
