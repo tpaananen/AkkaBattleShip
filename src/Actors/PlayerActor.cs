@@ -37,7 +37,7 @@ namespace Actors.CSharp
             {
                 _gameManager.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);
             }
-            _playerUserInterface.Tell(PoisonPill.Instance, Self);
+            Context.Stop(_playerUserInterface);
             base.PreRestart(reason, message);
         }
 

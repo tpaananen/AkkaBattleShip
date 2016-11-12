@@ -14,7 +14,6 @@ namespace Actors.CSharp
         private PlayerContainer _opponent;
         private readonly Guid _gameToken;
         private bool _stopHandled;
-        private readonly ICanTell _gameManager = ActorSystemContext.VirtualManager();
 
         public GameActor(Guid gameToken)
         {
@@ -186,8 +185,8 @@ namespace Actors.CSharp
                 _opponent.Tell(new Message.GameStatusUpdate(_opponent.Player.Token, _gameToken, timeout ? GameStatus.GameOver : GameStatus.YouLost, Self, message), Self);
                 _current.Tell(new Message.GameStatusUpdate(_current.Player.Token, _gameToken, timeout ? GameStatus.GameOver : GameStatus.YouWon, Self, message), Self);
             }
-            _gameManager.Tell(new Message.PlayersFree(_gameToken, _current.Player.Token, _opponent.Player.Token), Self);
-            Self.Tell(PoisonPill.Instance);
+            Context.Parent.Tell(new Message.PlayersFree(_gameToken, _current.Player.Token, _opponent.Player.Token), Self);
+            Context.Stop(Self);
         }
 
         private void SwitchSides()

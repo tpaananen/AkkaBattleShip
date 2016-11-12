@@ -34,7 +34,7 @@ namespace BattleShipConsole
             return true;
         }
 
-        public Ship CreateShip(string coords)
+        public static Ship CreateShip(string coords)
         {
             var split = coords.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries);
             if (split.Length != 2)

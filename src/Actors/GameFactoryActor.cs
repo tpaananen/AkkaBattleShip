@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Akka.Actor;
 using Messages.CSharp;
 
@@ -6,6 +7,8 @@ namespace Actors.CSharp
 {
     public class GameFactoryActor : BattleShipActor
     {
+        private readonly IDictionary<Guid, IActorRef> _activeGames = new Dictionary<Guid, IActorRef>(); 
+
         private IActorRef _gameUnderConstruction;
         private Guid _currentGameToken;
 
@@ -25,14 +28,13 @@ namespace Actors.CSharp
                 Log.Info("The first player arrived, forwarding to game with token " + _currentGameToken);
 
                 _gameUnderConstruction = Context.ActorOf(Props.Create(() => new GameActor(_currentGameToken)), _currentGameToken.ToString());
+                _activeGames[_currentGameToken] = _gameUnderConstruction;
                 _gameUnderConstruction.Tell(new Message.PlayerJoining(_currentGameToken, message.Player), Self);
                 Become(WaitingForSecondPlayer);
             });
 
-            Receive<Message.StopGame>(message =>
-            {
-                StopGame(message);
-            });
+            Receive<Message.StopGame>(message => StopGame(message));
+            Receive<Message.PlayersFree>(message => Context.Parent.Forward(message));
         }
 
         private void WaitingForSecondPlayer()
@@ -44,17 +46,18 @@ namespace Actors.CSharp
                 Become(WaitingForFirstPlayer);
             });
 
-            Receive<Message.StopGame>(message =>
-            {
-                StopGame(message);
-            });
+            Receive<Message.StopGame>(message => StopGame(message));
+            Receive<Message.PlayersFree>(message => Context.Parent.Forward(message));
         }
 
         protected override void PreRestart(Exception reason, object message)
         {
             if (_currentGameToken != Guid.Empty)
             {
-                _gameUnderConstruction.Tell(new Message.StopGame(Guid.Empty, _currentGameToken));
+                foreach (var game in _activeGames)
+                {
+                    StopGame(new Message.StopGame(Guid.Empty, game.Key));
+                }
             }
             base.PreRestart(reason, message);
         }
@@ -66,7 +69,12 @@ namespace Actors.CSharp
 
         private void StopGame(Message.StopGame message)
         {
-            Context.ActorSelection(message.GameToken.ToString()).Tell(message, Self);
+            IActorRef game;
+            if (_activeGames.TryGetValue(message.GameToken, out game))
+            {
+                game.Tell(message, Self);
+                _activeGames.Remove(message.GameToken);
+            }
         }
     }
 }
