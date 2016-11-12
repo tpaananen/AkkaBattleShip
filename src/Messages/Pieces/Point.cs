@@ -4,25 +4,27 @@ namespace Messages.CSharp.Pieces
 {
     public struct Point : IEquatable<Point>, IComparable<Point>
     {
-        public const char A = 'A';
-        public const char J = 'J';
-        public char X { get; private set; }
-        public byte Y { get; private set; }
+        // Workaround: Wire does not know how to play with chars
+        private readonly int _fieldX;
+
+        public char X => (char)_fieldX;
+
+        public int Y { get; private set; }
         public bool HasShip { get; private set; }
         public bool HasHit { get; private set; }
 
-        public Point(char x, byte y, bool hasShip, bool hasHit)
+        public Point(int x, int y, bool hasShip, bool hasHit)
         {
             RequireXPositionInRange(x, "x");
             RequireYPositionInRange(y, "y");
-            X = x;
+            _fieldX = x;
             Y = y;
             HasShip = hasShip;
             HasHit = hasHit;
         }
 
         // ReSharper disable once UnusedParameter.Local
-        private static void RequireYPositionInRange(byte value, string name)
+        private static void RequireYPositionInRange(int value, string name)
         {
             if (value < 1 || value > 10)
             {
@@ -31,9 +33,9 @@ namespace Messages.CSharp.Pieces
         }
 
         // ReSharper disable once UnusedParameter.Local
-        private static void RequireXPositionInRange(char value, string name)
+        private static void RequireXPositionInRange(int value, string name)
         {
-            if (value < A || value > J)
+            if (value < 'A' || value > 'J')
             {
                 throw new ArgumentOutOfRangeException(name);
             }
@@ -41,17 +43,21 @@ namespace Messages.CSharp.Pieces
 
         public decimal DistanceTo(Point other)
         {
+            if (this == other)
+            {
+                return 1;
+            }
             return this - other + 1;
         }
 
         public int CompareTo(Point other)
         {
-            return Y == other.Y ? X.CompareTo(other.X) : Y.CompareTo(other.Y);
+            return Y == other.Y ? _fieldX.CompareTo(other._fieldX) : Y.CompareTo(other.Y);
         }
 
         public bool Equals(Point other)
         {
-            return X == other.X && Y == other.Y;
+            return _fieldX == other._fieldX && Y == other.Y;
         }
 
         public override bool Equals(object obj)
@@ -64,7 +70,7 @@ namespace Messages.CSharp.Pieces
         {
             unchecked
             {
-                return (X.GetHashCode()*397) ^ Y.GetHashCode();
+                return (_fieldX.GetHashCode()*397) ^ Y.GetHashCode();
             }
         }
 
@@ -80,12 +86,12 @@ namespace Messages.CSharp.Pieces
 
         public override string ToString()
         {
-            return string.Format("[{0}:{1}], Ship: {2}, Hit: {3}", X, Y, HasShip, HasHit);
+            return $"[{X}:{Y}], Ship: {HasShip}, Hit: {HasHit}";
         }
 
         public static decimal operator -(Point left, Point right)
         {
-            return (decimal)Math.Sqrt(Math.Pow((left.X - A) - (right.X - A), 2) + Math.Pow(left.Y - right.Y, 2));
+            return (decimal)Math.Sqrt(Math.Pow((left.X - 'A') - (right.X - 'A'), 2) + Math.Pow(left.Y - right.Y, 2));
         }
 
     }

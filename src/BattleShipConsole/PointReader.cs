@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Messages.CSharp.Pieces;
 
 namespace BattleShipConsole
 {
     public class PointReader : ConsoleTeller
     {
-        public bool ParsePoint(string start, out Point point)
+        public static bool ParsePoint(string start, out Point point)
         {
             point = new Point('A', 1, true, false);
             if (start.Length < 2 || start.Length > 3)
@@ -17,9 +16,9 @@ namespace BattleShipConsole
             }
 
             var c = start.Substring(0, 1).ToUpper()[0];
-            var n = byte.Parse(start.Substring(1));
+            var n = int.Parse(start.Substring(1));
 
-            if (c < Point.A || c > Point.J)
+            if (c < 'A' || c > 'J')
             {
                 Tell("Invalid range in " + start);
                 return false;
@@ -35,7 +34,7 @@ namespace BattleShipConsole
             return true;
         }
 
-        public Ship CreateShip(string coords)
+        public static Ship CreateShip(string coords)
         {
             var split = coords.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries);
             if (split.Length != 2)
@@ -88,7 +87,7 @@ namespace BattleShipConsole
             }
 
             list.Sort();
-            return new Ship(list);
+            return new Ship(list.ToArray());
         }
     }
 }

@@ -96,10 +96,18 @@ namespace BattleShipConsole
 
             Receive<string>(message => ShipMatcher.IsMatch(message), message =>
             {
-                var ship = _pointReader.CreateShip(message);
-                if (ship != null)
+                try
                 {
-                    Context.Parent.Tell(new Message.ShipPosition(Guid.Empty, Guid.Empty, ship), Self);
+                    var ship = PointReader.CreateShip(message);
+                    if (ship != null)
+                    {
+                        Context.Parent.Tell(new Message.ShipPosition(Guid.Empty, Guid.Empty, ship), Self);
+                        return;
+                    }
+                }
+                catch (InvalidOperationException ex)
+                {
+                    Tell(ex.Message + " Invalid ship config, try again");
                     return;
                 }
                 Tell("Invalid ship config, try again");
@@ -108,7 +116,7 @@ namespace BattleShipConsole
             Receive<string>(message => PointMatcher.IsMatch(message), message =>
             {
                 Point point;
-                if (!_pointReader.ParsePoint(message, out point))
+                if (!PointReader.ParsePoint(message, out point))
                 {
                     Become(Idle);
                     Self.Tell("coord");

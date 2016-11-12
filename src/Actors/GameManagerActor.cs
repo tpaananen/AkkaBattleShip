@@ -36,12 +36,12 @@ namespace Actors.CSharp
             Receive<Message.UnregisterPlayer>(HasSender, message =>
             {
                 Log.Info("Unregister message from " + message.Token);
-                if (!_players.ContainsKey(Sender))
+                if (!_players.Remove(Sender))
                 {
-                    Log.Error("Received message to unregister a player, but the player does not exist with the token");
+                    Log.Error("Received message to unregister a player, but the player does not exist with the token " + message.Token);
                     return;
                 }
-                _players.Remove(Sender);
+
                 if (message.GameToken != Guid.Empty)
                 {
                     _gameFactory.Tell(new Message.StopGame(message.Token, message.GameToken));
@@ -90,7 +90,7 @@ namespace Actors.CSharp
             ActorInfoContainer player;
             if (!_players.TryGetValue(Sender, out player) || player.Token != message.Token)
             {
-                error = "Received message create game from unregistered player.";
+                error = "Received a message to create a game from unregistered player.";
             }
             return player;
         }

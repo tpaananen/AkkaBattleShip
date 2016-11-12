@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Actors.CSharp;
 using Akka.Actor;
 using Akka.Configuration;
@@ -19,7 +20,7 @@ namespace BattleShipConsole
             {
                 var consoleGuardian = system.ActorOf(Props.Create(() => new ConsoleGuardianActor()), "playerguardian");
                 consoleGuardian.Tell(new Message.CreatePlayer(name));
-                system.AwaitTermination();
+                system.WhenTerminated.Wait();
             }
         }
     }

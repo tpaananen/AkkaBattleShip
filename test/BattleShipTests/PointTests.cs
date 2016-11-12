@@ -65,12 +65,16 @@ namespace BattleShipTests
             var point2 = new Point('E', 6, false, false);
             Assert.AreEqual(1, point1.DistanceTo(point2));
 
-            point1 = new Point(Point.A, 1, false, false);
-            point2 = new Point(Point.J, 1, false, false);
+            point1 = new Point('E', 6, false, false);
+            point2 = new Point('F', 6, false, false);
+            Assert.AreEqual(2, point1.DistanceTo(point2));
+
+            point1 = new Point('A', 1, false, false);
+            point2 = new Point('J', 1, false, false);
             Assert.AreEqual(10, point1.DistanceTo(point2));
 
-            point1 = new Point(Point.A, 1, false, false);
-            point2 = new Point(Point.A, 10, false, false);
+            point1 = new Point('A', 1, false, false);
+            point2 = new Point('A', 10, false, false);
             Assert.AreEqual(10, point1.DistanceTo(point2));
         }
 

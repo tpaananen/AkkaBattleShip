@@ -12,7 +12,7 @@ namespace Actors.CSharp
         private readonly List<Ship> _ships = new List<Ship>();
         private readonly Dictionary<Point, IActorRef> _pointActors = new Dictionary<Point, IActorRef>(100);
         private readonly List<Point> _currentPoints = new List<Point>(100);
-        private Stack<Tuple<string, int>> _shipConfig = new Stack<Tuple<string, int>>(TablesAndShips.Ships);
+        private readonly Stack<Tuple<string, int>> _shipConfig = new Stack<Tuple<string, int>>(TablesAndShips.Ships);
 
         private readonly Guid _playerToken;
         private readonly Guid _gameToken;
@@ -116,7 +116,6 @@ namespace Actors.CSharp
             }
             else
             {
-                _shipConfig = null;
                 foreach (var point in _currentPoints.Where(d => !d.HasShip))
                 {
                     _pointActors.Add(point, Context.ActorOf(Props.Create(() => new PointActor(point, _gameToken))));
@@ -148,7 +147,7 @@ namespace Actors.CSharp
 
         private void AddNonShipPoints()
         {
-            for (var x = Point.A; x <= Point.J; ++x)
+            for (var x = 'A'; x <= 'J'; ++x)
             {
                 for (byte y = 1; y <= 10; ++y)
                 {

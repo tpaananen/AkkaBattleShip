@@ -37,7 +37,7 @@ namespace Actors.CSharp
             {
                 _gameManager.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);
             }
-            _playerUserInterface.Tell(PoisonPill.Instance, Self);
+            Context.Stop(_playerUserInterface);
             base.PreRestart(reason, message);
         }
 
@@ -147,10 +147,10 @@ namespace Actors.CSharp
                 _playerUserInterface.Tell(message, Self);
             });
 
-            Receive<string>(message => message == "unregister", message =>
+            Receive<string>(message => message == "unregister", async message =>
             {
                 _gameManager.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);
-                ActorSystemContext.System.Shutdown(); // stopping the client
+                await ActorSystemContext.System.Terminate().ConfigureAwait(false); // stopping the client
             });
 
             ReceiveAny(message =>
