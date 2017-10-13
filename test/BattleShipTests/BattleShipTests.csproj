@@ -49,40 +49,36 @@
       <Project>{ee65da6c-8ebc-44ce-9eff-d0e193839e7a}</Project>
       <Name>Actors.CSharp</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\BattleShipConsole\BattleShipConsole.csproj">
-      <Project>{3e82192d-3926-4e03-a5c4-8216d09d1151}</Project>
-      <Name>BattleShipConsole</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\src\Messages\Messages.CSharp.csproj">
       <Project>{2bbc2467-2e0c-47b5-8fd3-d0578ccaaf8e}</Project>
       <Name>Messages.CSharp</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Akka, Version=1.1.2.29, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Akka.1.1.2\lib\net45\Akka.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Akka, Version=1.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Akka.1.3.1\lib\net45\Akka.dll</HintPath>
     </Reference>
-    <Reference Include="Akka.TestKit, Version=1.1.2.29, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Akka.TestKit.1.1.2\lib\net45\Akka.TestKit.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Akka.Serialization.Hyperion, Version=1.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Akka.Serialization.Hyperion.1.3.1-beta52\lib\net45\Akka.Serialization.Hyperion.dll</HintPath>
     </Reference>
-    <Reference Include="Akka.TestKit.NUnit, Version=1.1.2.6, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Akka.TestKit.NUnit.1.1.2\lib\net45\Akka.TestKit.NUnit.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Akka.TestKit, Version=1.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Akka.TestKit.1.3.1\lib\net45\Akka.TestKit.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Akka.TestKit.NUnit, Version=1.2.1.8, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Akka.TestKit.NUnit.1.2.1\lib\net45\Akka.TestKit.NUnit.dll</HintPath>
     </Reference>
-    <Reference Include="nunit.framework, Version=2.6.4.14350, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Hyperion, Version=0.9.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Hyperion.0.9.6\lib\net45\Hyperion.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit.framework, Version=3.8.1.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NUnit.3.8.1\lib\net45\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=1.1.36.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Collections.Immutable.1.1.36\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="System.Collections.Immutable, Version=1.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Collections.Immutable.1.4.0\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

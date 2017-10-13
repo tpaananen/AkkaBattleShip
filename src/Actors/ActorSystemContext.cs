@@ -10,7 +10,7 @@ namespace Actors.CSharp
 
         public static ActorSystem CreateActorSystemContext(Config config)
         {
-            return (System = ActorSystem.Create("BattleShip", config));
+            return System = ActorSystem.Create("BattleShip", config);
         }
 
         public static void CreateManager()
