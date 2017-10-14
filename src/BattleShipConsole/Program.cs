@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Actors.CSharp;
 using Akka.Actor;
 using Akka.Configuration;
-using Messages.CSharp;
+using Messages.FSharp.Message;
 
 namespace BattleShipConsole
 {
@@ -19,7 +18,7 @@ namespace BattleShipConsole
             using (var system = ActorSystemContext.CreateActorSystemContext(config))
             {
                 var consoleGuardian = system.ActorOf(Props.Create(() => new ConsoleGuardianActor()), "playerguardian");
-                consoleGuardian.Tell(new Message.CreatePlayer(name));
+                consoleGuardian.Tell(new CreatePlayer(name));
                 system.WhenTerminated.Wait();
             }
         }

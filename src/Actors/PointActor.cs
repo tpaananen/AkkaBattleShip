@@ -1,6 +1,6 @@
 ﻿using System;
-using Messages.CSharp;
-using Messages.CSharp.Pieces;
+using Messages.FSharp.Message;
+using Messages.FSharp.Pieces;
 
 namespace Actors.CSharp
 {
@@ -14,19 +14,19 @@ namespace Actors.CSharp
             _point = point;
             _gameToken = gameToken;
 
-            Receive<Message.Missile>(message => message.Point == _point, message =>
+            Receive<Missile>(message => message.Point == _point, message =>
             {
                 PointHasHit();
-                Context.Parent.Tell(new Message.MissileDidNotHitShip(Guid.Empty, _gameToken, _point), Self);
+                Context.Parent.Tell(new MissileDidNotHitShip(Guid.Empty, _gameToken, _point), Self);
                 Become(Destroyed);
             });
         }
 
         private void Destroyed()
         {
-            Receive<Message.Missile>(message =>
+            Receive<Missile>(message =>
             {
-                Context.Parent.Tell(new Message.AlreadyHit(Guid.Empty, _gameToken, _point), Self);
+                Context.Parent.Tell(new AlreadyHit(Guid.Empty, _gameToken, _point), Self);
             });
         }
 

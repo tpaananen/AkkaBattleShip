@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Messages.CSharp.Pieces;
+using Messages.FSharp.Pieces;
 
 namespace BattleShipConsole
 {
@@ -42,14 +42,12 @@ namespace BattleShipConsole
                 return null;
             }
 
-            Point startPoint;
-            if (!ParsePoint(split[0], out startPoint))
+            if (!ParsePoint(split[0], out var startPoint))
             {
                 return null;
             }
 
-            Point endPoint;
-            if (!ParsePoint(split[1], out endPoint))
+            if (!ParsePoint(split[1], out var endPoint))
             {
                 return null;
             }

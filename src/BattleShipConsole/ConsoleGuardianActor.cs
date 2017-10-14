@@ -1,6 +1,6 @@
 ﻿using Actors.CSharp;
 using Akka.Actor;
-using Messages.CSharp;
+using Messages.FSharp.Message;
 
 namespace BattleShipConsole
 {
@@ -15,7 +15,7 @@ namespace BattleShipConsole
             _reader = Context.ActorOf(Props.Create(() => new ConsoleReaderActor()), "reader");
             _consoleUi = Props.Create(() => new ConsoleActor());
 
-            Receive<Message.CreatePlayer>(message =>
+            Receive<CreatePlayer>(message =>
             {
                 Context.ActorOf(Props.Create(() => new PlayerActor(message.Name, _consoleUi, _reader)), (++_counter).ToString());
             });

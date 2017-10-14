@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Actors.CSharp</RootNamespace>
     <AssemblyName>Actors.CSharp</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -55,6 +55,7 @@
     <Reference Include="DotNetty.Transport, Version=0.4.6.0, Culture=neutral, PublicKeyToken=bc13ca065fa06c29, processorArchitecture=MSIL">
       <HintPath>..\..\packages\DotNetty.Transport.0.4.6\lib\net45\DotNetty.Transport.dll</HintPath>
     </Reference>
+    <Reference Include="FSharp.Core, Version=4.4.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="Google.Protobuf, Version=3.4.1.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Google.Protobuf.3.4.1\lib\net45\Google.Protobuf.dll</HintPath>
     </Reference>
@@ -102,9 +103,9 @@
     <Compile Include="ShipValidator.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Messages\Messages.CSharp.csproj">
-      <Project>{2bbc2467-2e0c-47b5-8fd3-d0578ccaaf8e}</Project>
-      <Name>Messages.CSharp</Name>
+    <ProjectReference Include="..\Messages.FSharp\Messages.FSharp.fsproj">
+      <Project>{b9b905cb-0ff9-4a8d-93b7-743bcacca8bd}</Project>
+      <Name>Messages.FSharp</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

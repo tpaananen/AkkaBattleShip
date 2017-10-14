@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Akka.Actor;
-using Messages.CSharp;
+using Messages.FSharp.Message;
 
 namespace Actors.CSharp
 {
@@ -24,7 +23,7 @@ namespace Actors.CSharp
             _gameUnderConstruction = null;
             _currentGameToken = Guid.Empty;
 
-            Receive<Message.PlayerArrived>(message =>
+            Receive<PlayerArrived>(message =>
             {
                 _currentGameToken = Guid.NewGuid();
                 Log.Info("The first player arrived, forwarding to game with token " + _currentGameToken);
@@ -32,35 +31,35 @@ namespace Actors.CSharp
                 _gameUnderConstruction = Context.ActorOf(Props.Create(() => new GameActor(_currentGameToken)), _currentGameToken.ToString());
                 _activeGames[_currentGameToken] = _gameUnderConstruction;
                 _activePlayers[message.Player.Token] = _currentGameToken;
-                _gameUnderConstruction.Tell(new Message.PlayerJoining(_currentGameToken, message.Player), Self);
+                _gameUnderConstruction.Tell(new PlayerJoining(message.Player.Token, _currentGameToken, message.Player), Self);
                 Become(WaitingForSecondPlayer);
             });
 
-            Receive<Message.StopGame>(message => StopGame(message));
-            Receive<Message.PlayersFree>(message => FreePlayers(message));
-            Receive<Message.PlayerTerminated>(message => FindGameAndStop(message));
+            Receive<StopGame>(message => StopGame(message));
+            Receive<PlayersFree>(message => FreePlayers(message));
+            Receive<PlayerTerminated>(message => FindGameAndStop(message));
         }
 
         private void WaitingForSecondPlayer()
         {
-            Receive<Message.PlayerArrived>(message =>
+            Receive<PlayerArrived>(message =>
             {
                 Log.Info("The second player arrived, forwarding to game with token " + _currentGameToken);
                 _activePlayers[message.Player.Token] = _currentGameToken;
-                _gameUnderConstruction.Tell(new Message.PlayerJoining(_currentGameToken, message.Player), Self);
+                _gameUnderConstruction.Tell(new PlayerJoining(message.Player.Token, _currentGameToken, message.Player), Self);
                 Become(WaitingForFirstPlayer);
             });
 
-            Receive<Message.StopGame>(message => StopGame(message));
-            Receive<Message.PlayersFree>(message => FreePlayers(message));
-            Receive<Message.PlayerTerminated>(message => FindGameAndStop(message));
+            Receive<StopGame>(message => StopGame(message));
+            Receive<PlayersFree>(message => FreePlayers(message));
+            Receive<PlayerTerminated>(message => FindGameAndStop(message));
         }
 
         protected override void PreRestart(Exception reason, object message)
         {
             foreach (var game in _activeGames)
             {
-                StopGame(new Message.StopGame(Guid.Empty, game.Key));
+                StopGame(new StopGame(Guid.Empty, game.Key));
             }
             base.PreRestart(reason, message);
         }
@@ -70,26 +69,24 @@ namespace Actors.CSharp
             return new OneForOneStrategy(x => Directive.Resume);
         }
 
-        private void StopGame(Message.StopGame message)
+        private void StopGame(StopGame message)
         {
-            IActorRef game;
-            if (_activeGames.TryGetValue(message.GameToken, out game))
+            if (_activeGames.TryGetValue(message.GameToken, out var game))
             {
                 game.Tell(message, Self);
                 RemoveGame(message.GameToken);
             }
         }
 
-        private void FindGameAndStop(Message.PlayerTerminated message)
+        private void FindGameAndStop(PlayerTerminated message)
         {
-            Guid gameToken;
-            if (_activePlayers.TryGetValue(message.Token, out gameToken))
+            if (_activePlayers.TryGetValue(message.Token, out var gameToken))
             {
-                StopGame(new Message.StopGame(message.Token, gameToken));
+                StopGame(new StopGame(message.Token, gameToken));
             }
         }
 
-        private void FreePlayers(Message.PlayersFree message)
+        private void FreePlayers(PlayersFree message)
         {
             Context.Parent.Forward(message);
             RemoveGame(message.GameToken);
