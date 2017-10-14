@@ -1,5 +1,6 @@
-﻿namespace Messages.FSharp.Message
+﻿namespace Messages.FSharp
     open System
+
     type ShipDestroyed(token, gameToken, point) =
         inherit WithPoint(token, gameToken, point)
 

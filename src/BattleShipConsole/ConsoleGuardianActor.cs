@@ -1,12 +1,12 @@
 ﻿using Actors.CSharp;
 using Akka.Actor;
-using Messages.FSharp.Message;
+using Messages.FSharp;
 
 namespace BattleShipConsole
 {
     public class ConsoleGuardianActor : BattleShipActor
     {
-        private int _counter = 0;
+        private int _counter;
         private readonly Props _consoleUi;
         private readonly IActorRef _reader;
 

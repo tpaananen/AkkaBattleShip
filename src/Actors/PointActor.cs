@@ -1,6 +1,5 @@
 ﻿using System;
-using Messages.FSharp.Message;
-using Messages.FSharp.Pieces;
+using Messages.FSharp;
 
 namespace Actors.CSharp
 {

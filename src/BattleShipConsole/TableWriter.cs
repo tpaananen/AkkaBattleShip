@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Messages.FSharp.Pieces;
+using Messages.FSharp;
 
 namespace BattleShipConsole
 {

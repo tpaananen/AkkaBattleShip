@@ -2,7 +2,7 @@
 using Actors.CSharp;
 using Akka.Actor;
 using Akka.Configuration;
-using Messages.FSharp.Message;
+using Messages.FSharp;
 
 namespace BattleShipConsole
 {

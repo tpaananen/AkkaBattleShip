@@ -1,4 +1,4 @@
-﻿namespace Messages.FSharp.Message
+﻿namespace Messages.FSharp
     open System
 
     type RegisterPlayer(name:string) =

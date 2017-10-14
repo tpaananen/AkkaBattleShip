@@ -3,14 +3,12 @@ using System.Text.RegularExpressions;
 using Actors.CSharp;
 using Akka.Actor;
 using Messages.FSharp;
-using Messages.FSharp.Message;
 
 namespace BattleShipConsole
 {
     public class ConsoleActor : BattleShipActor
     {
         private readonly TableWriter _tableWriter = new TableWriter();
-        private readonly PointReader _pointReader = new PointReader();
 
         private static readonly Regex ShipMatcher = new Regex("^[a-jA-J]{1}([1-9]|10){1}[:]{1}[a-jA-J]{1}([1-9]|10){1}$", RegexOptions.Compiled);
         private static readonly Regex PointMatcher = new Regex("^[a-jA-J]{1}([1-9]|10){1}$", RegexOptions.Compiled);

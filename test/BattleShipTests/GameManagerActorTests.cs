@@ -2,7 +2,7 @@
 using Actors.CSharp;
 using Akka.Actor;
 using Akka.TestKit.NUnit;
-using Messages.FSharp.Message;
+using Messages.FSharp;
 using NUnit.Framework;
 
 namespace BattleShipTests

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Akka.Actor;
 using Messages.FSharp;
-using Messages.FSharp.Message;
 
 namespace Actors.CSharp
 {

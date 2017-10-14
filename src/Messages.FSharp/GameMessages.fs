@@ -1,15 +1,16 @@
-﻿namespace Messages.FSharp.Message
+﻿namespace Messages.FSharp
     open System
     open Akka.Actor
     open Messages.FSharp
-    open Messages.FSharp.Pieces
     open Messages.FSharp.TablesAndShips
     open System.Collections.Generic
 
+    [<AbstractClass>]
     type GameMessage(token, gameToken: Guid) =
         inherit WithToken(token)
         member this.GameToken = gameToken
-
+    
+    [<AbstractClass>]
     type WithPoint(token, gameToken, point:Point) = 
         inherit GameMessage(token, gameToken)
         member this.Point = point
@@ -17,7 +18,7 @@
     type CreateGame(token: System.Guid) =
         inherit WithToken(token)
 
-    type UnableToCreateGame(token, error) =
+    type UnableToCreateGame(token, error:string) =
         inherit WithToken(token)
         member this.Error = error
     

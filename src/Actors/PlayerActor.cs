@@ -1,8 +1,6 @@
 ﻿using System;
 using Akka.Actor;
 using Messages.FSharp;
-using Messages.FSharp.Message;
-using Messages.FSharp.Pieces;
 
 // ReSharper disable PossibleUnintendedReferenceComparison
 

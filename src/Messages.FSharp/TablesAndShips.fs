@@ -1,19 +1,16 @@
 ﻿module Messages.FSharp.TablesAndShips
-    open System
-    open System.Collections.Generic
 
-    type Piece(name:string, length:int) =
-        member this.Name = name
-        member this.Length = length
+    type Piece = {
+        Name:string
+        Length:int}
 
     let private pieces = [
-        Piece("Carrier", 5)
-        Piece("BattleShip", 4)
-        Piece("Cruiser", 3)
-        Piece("Cruiser", 3)
-        Piece("Destroyer", 2)
-        Piece("Submarine", 1)
+        { Name = "Carrier"; Length = 5 }
+        { Name = "BattleShip"; Length = 4 }
+        { Name = "Cruiser"; Length = 3 }
+        { Name = "Cruiser"; Length = 3 }
+        { Name = "Destroyer"; Length = 2 }
+        { Name = "Submarine"; Length = 1 }
     ]
     
     let GetTablesAndShips() = pieces
-        

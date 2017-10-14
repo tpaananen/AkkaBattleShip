@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
-using Messages.FSharp.Message;
+using Messages.FSharp;
 
 namespace Actors.CSharp
 {

@@ -1,4 +1,4 @@
-﻿namespace Messages.FSharp.Pieces
+﻿namespace Messages.FSharp
     open System
     open System.Collections.Generic
     open System.Linq
@@ -16,7 +16,7 @@
             |> sqrt
 
         member this.DistanceTo(other:Point):float =
-            if this = other then 1.0 else this - other + 1.0
+            if this.Equals other then 1.0 else this - other + 1.0
 
         interface IComparable<Point> with
             member this.CompareTo(other:Point) =
@@ -66,8 +66,8 @@
                 if index < pointsIndexes.Length then
                     let current = pointsIndexes.[index]
                     if Math.Abs(current - previous) > 1
-                        then raise (InvalidOperationException "Ship must not have holes.")
-                        else validate(current, (index + 1))
+                    then raise (InvalidOperationException "Ship must not have holes.")
+                    else validate(current, (index + 1))
 
             validate(previous, 1)
 

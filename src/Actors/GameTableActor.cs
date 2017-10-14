@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Messages.FSharp;
-using Messages.FSharp.Message;
-using Messages.FSharp.Pieces;
 
 namespace Actors.CSharp
 {
