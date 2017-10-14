@@ -8,7 +8,7 @@
         member this.Y = y
         member this.HasShip = hasShip
         member this.HasHit = hasHit
-        override this.ToString() = sprintf "[{%c}:{%d}], Ship: {%b}, Hit: {%b}" this.X this.Y this.HasShip this.HasHit;
+        override this.ToString() = sprintf "[%c:%d], Ship: %b, Hit: %b" this.X this.Y this.HasShip this.HasHit;
         
         static member (-) (left:Point, right:Point) = 
             (((float)left.X - (float)'A') - ((float)right.X - (float)'A')) ** 2.0 + 
