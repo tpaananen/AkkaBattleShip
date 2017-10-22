@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Messages.CSharp.Pieces;
+using Messages.FSharp;
 
 namespace Actors.CSharp
 {

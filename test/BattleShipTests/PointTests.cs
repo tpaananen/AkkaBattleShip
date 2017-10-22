@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Messages.CSharp.Pieces;
+using Messages.FSharp;
 using NUnit.Framework;
 
 namespace BattleShipTests

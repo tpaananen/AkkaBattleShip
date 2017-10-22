@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
-using Messages.CSharp;
-using Messages.CSharp.Containers;
+using Messages.FSharp;
 
 namespace Actors.CSharp
 {
@@ -16,24 +15,24 @@ namespace Actors.CSharp
         {
             _gameFactory = Context.ActorOf(Props.Create<GameFactoryActor>(), "gameFactory");
 
-            Receive<Message.RegisterPlayer>(HasSender, message =>
+            Receive<RegisterPlayer>(HasSender, message =>
             {
                 Log.Info("Register message from " + message.Name);
                 if (_players.ContainsKey(Sender))
                 {
                     string error = "Received register player message ('" + message.Name + "'), but the sender is already registered.";
                     Log.Error(error);
-                    Sender.Tell(new Message.RegisterPlayerResponse(Guid.Empty, false, error), Self);
+                    Sender.Tell(new RegisterPlayerResponse(Guid.Empty, false, error), Self);
                     return;
                 }
 
                 var container = CreateActorInfoContainer(message.Name, Sender);
                 _players.Add(Sender, container);
-                Sender.Tell(new Message.RegisterPlayerResponse(container.Token, true), Self);
+                Sender.Tell(new RegisterPlayerResponse(container.Token, true, null), Self);
                 Context.Watch(Sender);
             });
 
-            Receive<Message.UnregisterPlayer>(HasSender, message =>
+            Receive<UnregisterPlayer>(HasSender, message =>
             {
                 Log.Info("Unregister message from " + message.Token);
                 if (!_players.Remove(Sender))
@@ -44,17 +43,17 @@ namespace Actors.CSharp
 
                 if (message.GameToken != Guid.Empty)
                 {
-                    _gameFactory.Tell(new Message.StopGame(message.Token, message.GameToken));
+                    _gameFactory.Tell(new StopGame(message.Token, message.GameToken));
                 }
                 else
                 {
-                    _gameFactory.Tell(new Message.PlayerTerminated(message.Token), Self);
+                    _gameFactory.Tell(new PlayerTerminated(message.Token), Self);
                 }
 
                 Context.Unwatch(Sender);
             });
 
-            Receive<Message.CreateGame>(HasSender, message =>
+            Receive<CreateGame>(HasSender, message =>
             {
                 Log.Info("Create game message from " + message.Token);
 
@@ -63,7 +62,7 @@ namespace Actors.CSharp
                 {
                     error = "The player with the same token is already in a game.";
                     Log.Error(error);
-                    Sender.Tell(new Message.UnableToCreateGame(message.Token, error), Self);
+                    Sender.Tell(new UnableToCreateGame(message.Token, error), Self);
                     return;
                 }
 
@@ -71,14 +70,14 @@ namespace Actors.CSharp
                 if (error != null)
                 {
                     Log.Error(error);
-                    Sender.Tell(new Message.UnableToCreateGame(message.Token, error), Self);
+                    Sender.Tell(new UnableToCreateGame(message.Token, error), Self);
                     return;
                 }
 
-                _gameFactory.Tell(new Message.PlayerArrived(player), Self);
+                _gameFactory.Tell(new PlayerArrived(player), Self);
             });
 
-            Receive<Message.PlayersFree>(HasSender, message =>
+            Receive<PlayersFree>(HasSender, message =>
             {
                 Log.Info("Players free message from game " + message.GameToken);
                 foreach (var token in message.Tokens)
@@ -94,7 +93,7 @@ namespace Actors.CSharp
                 {
                     Log.Info($"Remote player {container.Name} terminated, removing...");
                     _players.Remove(message.ActorRef);
-                    _gameFactory.Tell(new Message.PlayerTerminated(container.Token), Self);
+                    _gameFactory.Tell(new PlayerTerminated(container.Token), Self);
                 }
                 Context.Unwatch(message.ActorRef);
             });
@@ -102,7 +101,7 @@ namespace Actors.CSharp
 
         #region Helpers
 
-        private ActorInfoContainer GetPlayer(Message.WithToken message, out string error)
+        private ActorInfoContainer GetPlayer(WithToken message, out string error)
         {
             error = null;
             ActorInfoContainer player;

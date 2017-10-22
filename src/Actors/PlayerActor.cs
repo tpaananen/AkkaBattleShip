@@ -1,7 +1,6 @@
 ﻿using System;
 using Akka.Actor;
-using Messages.CSharp;
-using Messages.CSharp.Pieces;
+using Messages.FSharp;
 
 // ReSharper disable PossibleUnintendedReferenceComparison
 
@@ -34,7 +33,7 @@ namespace Actors.CSharp
             _reader.Tell(_playerUserInterface);
             if (_token != Guid.Empty)
             {
-                _gameManager?.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);
+                _gameManager?.Tell(new UnregisterPlayer(_token, _currentGameToken), Self);
             }
             Context.Stop(_playerUserInterface);
             base.PreRestart(reason, message);
@@ -53,10 +52,10 @@ namespace Actors.CSharp
 
             Receive<string>(message => message == "register", message =>
             {
-                ActorSystemContext.VirtualManager().Tell(new Message.RegisterPlayer(_name), Self);
+                ActorSystemContext.VirtualManager().Tell(new RegisterPlayer(_name), Self);
             });
 
-            Receive<Message.RegisterPlayerResponse>(message =>
+            Receive<RegisterPlayerResponse>(message =>
             {
                 if (message.IsValid)
                 {
@@ -71,7 +70,7 @@ namespace Actors.CSharp
                 }
             });
 
-            Receive<Message.UnableToCreateGame>(message =>
+            Receive<UnableToCreateGame>(message =>
             {
                 _playerUserInterface.Tell("Unable to create game, " + message.Error, Self);
                 _playerUserInterface.Tell("join", Self);
@@ -84,10 +83,10 @@ namespace Actors.CSharp
             _currentGame = null;
             Receive<string>(message => message == "join", message =>
             {
-                _gameManager.Tell(new Message.CreateGame(_token), Self);
+                _gameManager.Tell(new CreateGame(_token), Self);
             });
 
-            Receive<Message.GameStatusUpdate>(message =>
+            Receive<GameStatusUpdate>(message =>
             {
                 switch (message.Status)
                 {
@@ -126,7 +125,7 @@ namespace Actors.CSharp
                 }
             });
 
-            Receive<Message.GiveMeNextPosition>(message =>
+            Receive<GiveMeNextPosition>(message =>
             {
                 if (message.GameToken == _currentGameToken)
                 {
@@ -134,22 +133,22 @@ namespace Actors.CSharp
                 }
             });
 
-            Receive<Message.ShipPosition>(message =>
+            Receive<ShipPosition>(message =>
             {
                 if (_currentGame != null)
                 {
-                    _currentGame.Tell(new Message.ShipPosition(_token, _currentGameToken, message.Ship), Self);
+                    _currentGame.Tell(new ShipPosition(_token, _currentGameToken, message.Ship), Self);
                 }
             });
 
-            Receive<Message.GameTable>(IsForMe, message =>
+            Receive<GameTable>(IsForMe, message =>
             {
                 _playerUserInterface.Tell(message, Self);
             });
 
             Receive<string>(message => message == "unregister", async message =>
             {
-                _gameManager.Tell(new Message.UnregisterPlayer(_token, _currentGameToken), Self);
+                _gameManager.Tell(new UnregisterPlayer(_token, _currentGameToken), Self);
                 await ActorSystemContext.System.Terminate().ConfigureAwait(false); // stopping the client
             });
 
@@ -163,12 +162,12 @@ namespace Actors.CSharp
 
         private void GameStarted()
         {
-            Receive<Message.GameTable>(IsForMe, message =>
+            Receive<GameTable>(IsForMe, message =>
             {
                 _playerUserInterface.Tell(message, Self);
             });
 
-            Receive<Message.GameStatusUpdate>(message => IsForMe(message) && message.Status == GameStatus.ItIsYourTurn, message =>
+            Receive<GameStatusUpdate>(message => IsForMe(message) && message.Status == GameStatus.ItIsYourTurn, message =>
             {
                 if (!string.IsNullOrEmpty(message.Message))
                 {
@@ -177,22 +176,22 @@ namespace Actors.CSharp
                 _playerUserInterface.Tell("coord", Self);
             });
 
-            Receive<Message.GameStatusUpdate>(message => IsForMe(message) && message.Status == GameStatus.None && !string.IsNullOrEmpty(message.Message), message =>
+            Receive<GameStatusUpdate>(message => IsForMe(message) && message.Status == GameStatus.None && !string.IsNullOrEmpty(message.Message), message =>
             {
                 _playerUserInterface.Tell(message.Message, Self);
             });
 
-            Receive<Message.MissileAlreadyHit>(IsForMe, message =>
+            Receive<MissileAlreadyHit>(IsForMe, message =>
             {
                 _playerUserInterface.Tell("The point was already used, sorry!", Self);
             });
 
             Receive<Point>(point =>
             {
-                _currentGame.Tell(new Message.Missile(_token, _currentGameToken, point), Self);
+                _currentGame.Tell(new Missile(_token, _currentGameToken, point), Self);
             });
 
-            Receive<Message.GameStatusUpdate>(message => IsForMe(message) && 
+            Receive<GameStatusUpdate>(message => IsForMe(message) && 
                 (message.Status == GameStatus.YouWon || 
                  message.Status == GameStatus.YouLost || 
                  message.Status == GameStatus.GameOver), 
@@ -205,7 +204,7 @@ namespace Actors.CSharp
             });
         }
 
-        private bool IsForMe(Message.GameMessage message)
+        private bool IsForMe(GameMessage message)
         {
             return message.Token == _token && message.GameToken == _currentGameToken;
         }

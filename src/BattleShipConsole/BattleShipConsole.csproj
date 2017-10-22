@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>BattleShipConsole</RootNamespace>
     <AssemblyName>BattleShipConsole</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
@@ -112,9 +112,9 @@
       <Project>{ee65da6c-8ebc-44ce-9eff-d0e193839e7a}</Project>
       <Name>Actors.CSharp</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Messages\Messages.CSharp.csproj">
-      <Project>{2bbc2467-2e0c-47b5-8fd3-d0578ccaaf8e}</Project>
-      <Name>Messages.CSharp</Name>
+    <ProjectReference Include="..\Messages.FSharp\Messages.FSharp.fsproj">
+      <Project>{b9b905cb-0ff9-4a8d-93b7-743bcacca8bd}</Project>
+      <Name>Messages.FSharp</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -2,15 +2,13 @@
 using System.Text.RegularExpressions;
 using Actors.CSharp;
 using Akka.Actor;
-using Messages.CSharp;
-using Messages.CSharp.Pieces;
+using Messages.FSharp;
 
 namespace BattleShipConsole
 {
     public class ConsoleActor : BattleShipActor
     {
         private readonly TableWriter _tableWriter = new TableWriter();
-        private readonly PointReader _pointReader = new PointReader();
 
         private static readonly Regex ShipMatcher = new Regex("^[a-jA-J]{1}([1-9]|10){1}[:]{1}[a-jA-J]{1}([1-9]|10){1}$", RegexOptions.Compiled);
         private static readonly Regex PointMatcher = new Regex("^[a-jA-J]{1}([1-9]|10){1}$", RegexOptions.Compiled);
@@ -33,7 +31,7 @@ namespace BattleShipConsole
                 Tell(message);
             });
 
-            Receive<Message.GameStatusUpdate>(message =>
+            Receive<GameStatusUpdate>(message =>
             {
                 HandleStatusMessage(message);
             });
@@ -61,7 +59,7 @@ namespace BattleShipConsole
                 }
             });
 
-            Receive<Message.GameStatusUpdate>(message =>
+            Receive<GameStatusUpdate>(message =>
             {
                 HandleStatusMessage(message);
             });
@@ -69,14 +67,14 @@ namespace BattleShipConsole
 
         private void Waiting()
         {
-            Receive<Message.GiveMeNextPosition>(message =>
+            Receive<GiveMeNextPosition>(message =>
             {
                 if (!string.IsNullOrEmpty(message.ErrorInPreviousConfig))
                 {
                     Tell(message.ErrorInPreviousConfig);
                 }
                 Tell("Coordinates format: A1:A5 -> a length of 5 ship vertically positioned");
-                Tell("Give coordinates for " + message.Config.Item1 + " (len: " + message.Config.Item2 + "): ");
+                Tell("Give coordinates for " + message.Config.Name + " (len: " + message.Config.Length + "): ");
             });
 
             Receive<string>(message => message == "coord" && Sender == Context.Parent, message =>
@@ -84,12 +82,12 @@ namespace BattleShipConsole
                 Tell("Your turn, give the next position to hit (format: A10) : ");
             });
 
-            Receive<Message.GameTable>(message =>
+            Receive<GameTable>(message =>
             {
                 _tableWriter.ShowTable(message.Points);
             });
 
-            Receive<Message.GameStatusUpdate>(message =>
+            Receive<GameStatusUpdate>(message =>
             {
                 HandleStatusMessage(message);
             });
@@ -101,7 +99,7 @@ namespace BattleShipConsole
                     var ship = PointReader.CreateShip(message);
                     if (ship != null)
                     {
-                        Context.Parent.Tell(new Message.ShipPosition(Guid.Empty, Guid.Empty, ship), Self);
+                        Context.Parent.Tell(new ShipPosition(Guid.Empty, Guid.Empty, ship), Self);
                         return;
                     }
                 }
@@ -115,8 +113,7 @@ namespace BattleShipConsole
 
             Receive<string>(message => PointMatcher.IsMatch(message), message =>
             {
-                Point point;
-                if (!PointReader.ParsePoint(message, out point))
+                if (!PointReader.ParsePoint(message, out var point))
                 {
                     Become(Idle);
                     Self.Tell("coord");
@@ -132,7 +129,7 @@ namespace BattleShipConsole
             });
         }
 
-        private void HandleStatusMessage(Message.GameStatusUpdate message)
+        private void HandleStatusMessage(GameStatusUpdate message)
         {
             if (!string.IsNullOrEmpty(message.Message))
             {
